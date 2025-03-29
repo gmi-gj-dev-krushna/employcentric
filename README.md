@@ -1,69 +1,209 @@
-# Welcome to your Lovable project
 
-## Project info
+# EmployCentric - Human Resource Management System
 
-**URL**: https://lovable.dev/projects/3afaed4c-93c6-4113-af0c-ae98db13ad56
+EmployCentric is a comprehensive HRMS (Human Resource Management System) built with the MERN stack (MongoDB, Express, React, Node.js), featuring JWT-based authentication and Google Single Sign-On (SSO).
 
-## How can I edit this code?
+## Features
 
-There are several ways of editing your application.
+- **Authentication**
+  - JWT-based authentication
+  - Google Single Sign-On (SSO) integration using Passport.js
+  - Role-based access control (Admin, HR, Manager, Employee)
 
-**Use Lovable**
+- **Employee Management**
+  - Employee profiles and directory
+  - Department and position management
+  - Employee documents and records
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/3afaed4c-93c6-4113-af0c-ae98db13ad56) and start prompting.
+- **Attendance Tracking**
+  - Check-in/check-out tracking
+  - Real-time attendance monitoring
+  - Monthly attendance reports
 
-Changes made via Lovable will be committed automatically to this repo.
+- **Leave Management**
+  - Leave request submission
+  - Approval workflows
+  - Leave balance tracking
+  - Different leave types (annual, sick, personal)
 
-**Use your preferred IDE**
+- **Payroll Processing**
+  - Salary generation and payslips
+  - Tax calculations and deductions
+  - Payment history
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- **Recruitment**
+  - Job posting management
+  - Candidate tracking
+  - Recruitment pipeline
+  - Interview scheduling
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Technology Stack
 
-Follow these steps:
+### Frontend
+- React with TypeScript
+- React Router for routing
+- Tailwind CSS for styling
+- shadcn/ui for UI components
+- Tanstack Query (React Query) for data fetching
+- Zustand for state management
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Backend
+- Node.js with Express
+- MongoDB for database
+- Mongoose ODM
+- JWT for authentication
+- Passport.js for auth strategies
+- Express-validator for request validation
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## Installation & Setup
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Prerequisites
+- Node.js
+- MongoDB
+- npm or yarn
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+### Environment Variables
+
+Create `.env` file in the backend directory:
+
+```
+# Server configuration
+PORT=5000
+NODE_ENV=development
+
+# Database
+MONGO_URI=mongodb://localhost:27017/employcentric
+
+# Authentication
+JWT_SECRET=your_jwt_secret_key
+JWT_EXPIRE=30d
+JWT_COOKIE_EXPIRE=30
+
+# Google OAuth
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_CALLBACK_URL=http://localhost:5000/api/auth/google/callback
+
+# Email (optional for notifications)
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_EMAIL=your_email@example.com
+SMTP_PASSWORD=your_email_password
+FROM_EMAIL=noreply@employcentric.com
+FROM_NAME=EmployCentric
+```
+
+### Installation Steps
+
+1. Clone the repository
+```bash
+git clone https://github.com/yourusername/employcentric.git
+cd employcentric
+```
+
+2. Install dependencies for frontend and backend
+```bash
+# For frontend
+cd frontend
+npm install
+
+# For backend
+cd ../backend
+npm install
+```
+
+3. Run the application
+```bash
+# Start backend server
+cd backend
+npm run dev
+
+# Start frontend development server
+cd frontend
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## API Endpoints
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Authentication
 
-**Use GitHub Codespaces**
+- **POST /api/auth/register** - Register a new user
+- **POST /api/auth/login** - Authenticate a user
+- **GET /api/auth/logout** - Logout current user
+- **GET /api/auth/me** - Get current user
+- **POST /api/auth/forgot-password** - Request password reset
+- **PUT /api/auth/reset-password** - Reset password
+- **GET /api/auth/google** - Authenticate with Google
+- **GET /api/auth/google/callback** - Google auth callback
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Employees
 
-## What technologies are used for this project?
+- **GET /api/employees** - Get all employees
+- **POST /api/employees** - Create a new employee
+- **GET /api/employees/:id** - Get a single employee
+- **PUT /api/employees/:id** - Update an employee
+- **DELETE /api/employees/:id** - Delete an employee
 
-This project is built with .
+### Attendance
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- **POST /api/attendance/check-in** - Record check-in
+- **PUT /api/attendance/check-out** - Record check-out
+- **GET /api/attendance** - Get attendance records
+- **GET /api/attendance/report** - Generate attendance report
 
-## How can I deploy this project?
+### Leave
 
-Simply open [Lovable](https://lovable.dev/projects/3afaed4c-93c6-4113-af0c-ae98db13ad56) and click on Share -> Publish.
+- **GET /api/leave** - Get all leave requests
+- **POST /api/leave** - Submit a leave request
+- **GET /api/leave/:id** - Get a single leave request
+- **PUT /api/leave/:id** - Update a leave request
+- **PUT /api/leave/:id/approve** - Approve a leave request
+- **PUT /api/leave/:id/reject** - Reject a leave request
 
-## I want to use a custom domain - is that possible?
+### Payroll
 
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+- **GET /api/payroll** - Get all payroll records
+- **POST /api/payroll/generate** - Generate payroll
+- **GET /api/payroll/:id** - Get a single payroll record
+- **GET /api/payroll/:id/slip** - Generate payslip
+
+### Recruitment
+
+- **GET /api/jobs** - Get all job postings
+- **POST /api/jobs** - Create a new job posting
+- **GET /api/jobs/:id** - Get a single job posting
+- **PUT /api/jobs/:id** - Update a job posting
+- **DELETE /api/jobs/:id** - Delete a job posting
+- **GET /api/candidates** - Get all candidates
+- **POST /api/candidates** - Add a new candidate
+- **PUT /api/candidates/:id/status** - Update candidate status
+
+## Project Structure
+
+```
+employcentric/
+├── backend/             # Backend API with Express and MongoDB
+│   ├── config/          # Configuration files
+│   ├── controllers/     # API controllers
+│   ├── middleware/      # Custom middleware
+│   ├── models/          # Mongoose models
+│   ├── routes/          # API routes
+│   ├── utils/           # Helper functions
+│   ├── app.js           # Express app
+│   └── server.js        # Entry point
+├── frontend/            # React frontend
+│   ├── public/          # Static files
+│   └── src/
+│       ├── components/  # Reusable components
+│       ├── contexts/    # React contexts
+│       ├── hooks/       # Custom hooks
+│       ├── lib/         # Utilities
+│       ├── pages/       # Page components
+│       ├── App.tsx      # Main app component
+│       └── main.tsx     # Entry point
+└── README.md            # Project documentation
+```
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
