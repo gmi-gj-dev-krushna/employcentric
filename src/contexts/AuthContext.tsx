@@ -1,7 +1,7 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import io from "socket.io-client";
 
 export type UserRole = "admin" | "hr" | "manager" | "employee";
 
@@ -24,6 +24,7 @@ interface AuthContextType {
   loginWithGoogle: () => Promise<void>;
   logout: () => void;
   updateUser: (userData: Partial<User>) => void;
+  socket: any;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,10 +41,17 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+// Create socket.io instance
+const socketInstance = io("http://localhost:3000", {
+  autoConnect: false,
+  withCredentials: true
+});
+
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [socket, setSocket] = useState<any>(socketInstance);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -53,42 +61,96 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const storedToken = localStorage.getItem("token");
     
     if (storedToken && storedUser) {
-      setUser(JSON.parse(storedUser));
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
       setToken(storedToken);
+      
+      // Connect socket and authenticate
+      socket.connect();
+      socket.emit('authenticate', parsedUser.id);
+      
+      // Check if session is still valid with the server
+      fetchCurrentUser();
+    } else {
+      setIsLoading(false);
     }
-    setIsLoading(false);
+    
+    // Socket event listeners for notifications
+    socket.on('leave-status-update', (data: any) => {
+      toast({
+        title: "Leave Request Update",
+        description: data.message,
+      });
+    });
+    
+    socket.on('new-leave-request', (data: any) => {
+      toast({
+        title: "New Leave Request",
+        description: data.message,
+      });
+    });
+    
+    return () => {
+      socket.disconnect();
+      socket.off('leave-status-update');
+      socket.off('new-leave-request');
+    };
   }, []);
 
-  // For demo purposes, we're mocking authentication
-  // In a real app, this would call the backend API
+  const fetchCurrentUser = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/api/me', {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data.user);
+      } else {
+        // Session expired or invalid
+        logout();
+      }
+    } catch (error) {
+      console.error("Failed to fetch current user:", error);
+      // Keep the user logged in if server is unavailable (for offline support)
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
       
-      // Mock API call
-      // In a real app: const response = await fetch('/api/auth/login', {...})
+      const response = await fetch('http://localhost:3000/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+        credentials: 'include'
+      });
       
-      // Mock successful response
-      const mockUser: User = {
-        id: "1",
-        name: email.split('@')[0],
-        email,
-        role: email.includes('admin') ? 'admin' : 
-              email.includes('hr') ? 'hr' : 
-              email.includes('manager') ? 'manager' : 'employee',
-      };
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Login failed');
+      }
       
-      const mockToken = "mock-jwt-token";
+      const data = await response.json();
       
       // Save to state and localStorage
-      setUser(mockUser);
-      setToken(mockToken);
-      localStorage.setItem("user", JSON.stringify(mockUser));
-      localStorage.setItem("token", mockToken);
+      setUser(data.user);
+      setToken("session-auth"); // We're using session cookies, so this is just a flag
+      localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.setItem("token", "session-auth");
+      
+      // Connect socket and authenticate
+      socket.connect();
+      socket.emit('authenticate', data.user.id);
       
       toast({
         title: "Login successful",
-        description: `Welcome back, ${mockUser.name}!`,
+        description: `Welcome back, ${data.user.name}!`,
       });
       
       // Redirect to dashboard
@@ -96,7 +158,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } catch (error) {
       toast({
         title: "Login failed",
-        description: "Invalid email or password",
+        description: error instanceof Error ? error.message : "Invalid email or password",
         variant: "destructive",
       });
     } finally {
@@ -104,6 +166,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  // For demo purposes, using the mock login since we don't have Google OAuth configured on the server
   const loginWithGoogle = async () => {
     try {
       setIsLoading(true);
@@ -132,6 +195,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       localStorage.setItem("user", JSON.stringify(mockUser));
       localStorage.setItem("token", mockToken);
       
+      // Connect socket and authenticate
+      socket.connect();
+      socket.emit('authenticate', mockUser.id);
+      
       navigate("/dashboard");
     } catch (error) {
       toast({
@@ -144,17 +211,32 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
-    setUser(null);
-    setToken(null);
-    navigate("/login");
-    
-    toast({
-      title: "Logged out successfully",
-      description: "You have been logged out of your account",
-    });
+  const logout = async () => {
+    try {
+      // Call logout API
+      await fetch('http://localhost:3000/api/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch (error) {
+      console.error("Logout API error:", error);
+    } finally {
+      // Clean up even if API fails
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+      setUser(null);
+      setToken(null);
+      
+      // Disconnect socket
+      socket.disconnect();
+      
+      navigate("/login");
+      
+      toast({
+        title: "Logged out successfully",
+        description: "You have been logged out of your account",
+      });
+    }
   };
 
   const updateUser = (userData: Partial<User>) => {
@@ -176,6 +258,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         loginWithGoogle,
         logout,
         updateUser,
+        socket,
       }}
     >
       {children}
