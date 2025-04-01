@@ -1,10 +1,18 @@
-
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, CheckCircle2, UserCircle, Users, Clock, Calendar, CreditCard, UserPlus } from "lucide-react";
+import PricingCard from "@/components/PricingCard";
+import { useTheme } from "@/contexts/ThemeContext";
+import { Sun, Moon } from "lucide-react";
 
 const Landing = () => {
+  const { theme, setTheme } = useTheme();
+
+  const toggleTheme = () => {
+    setTheme(theme === 'light' ? 'dark' : 'light');
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Navigation */}
@@ -31,6 +39,15 @@ const Landing = () => {
             </Link>
           </nav>
           <div className="flex items-center gap-3">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={toggleTheme}
+              className="rounded-full"
+              aria-label="Toggle theme"
+            >
+              {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+            </Button>
             <Button variant="outline" asChild>
               <Link to="/login">Log in</Link>
             </Button>
@@ -180,126 +197,53 @@ const Landing = () => {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <Card className="border-border">
-              <CardContent className="pt-6">
-                <div className="text-center mb-6">
-                  <h3 className="text-xl font-medium">Starter</h3>
-                  <div className="mt-4 flex items-baseline justify-center">
-                    <span className="text-4xl font-bold">$9</span>
-                    <span className="ml-1 text-muted-foreground">/ user / month</span>
-                  </div>
-                  <p className="mt-2 text-sm text-muted-foreground">Perfect for small teams</p>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-center">
-                    <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
-                    <span>Employee Management</span>
-                  </div>
-                  <div className="flex items-center">
-                    <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
-                    <span>Basic Attendance Tracking</span>
-                  </div>
-                  <div className="flex items-center">
-                    <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
-                    <span>Leave Management</span>
-                  </div>
-                  <div className="flex items-center">
-                    <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
-                    <span>Up to 25 employees</span>
-                  </div>
-                </div>
-                <div className="mt-8">
-                  <Button className="w-full" variant="outline">
-                    Choose Starter
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <PricingCard
+              title="Starter"
+              price={9}
+              description="Perfect for small teams"
+              features={[
+                { text: "Employee Management" },
+                { text: "Basic Attendance Tracking" },
+                { text: "Leave Management" },
+                { text: "Up to 25 employees" },
+              ]}
+              buttonText="Choose Starter"
+              buttonVariant="outline"
+              ctaLink="/register?plan=starter"
+            />
             
-            <Card className="border-primary relative">
-              <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                <span className="bg-primary text-primary-foreground text-xs py-1 px-3 rounded-full">
-                  Most Popular
-                </span>
-              </div>
-              <CardContent className="pt-6">
-                <div className="text-center mb-6">
-                  <h3 className="text-xl font-medium">Professional</h3>
-                  <div className="mt-4 flex items-baseline justify-center">
-                    <span className="text-4xl font-bold">$19</span>
-                    <span className="ml-1 text-muted-foreground">/ user / month</span>
-                  </div>
-                  <p className="mt-2 text-sm text-muted-foreground">For growing businesses</p>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-center">
-                    <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
-                    <span>Everything in Starter</span>
-                  </div>
-                  <div className="flex items-center">
-                    <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
-                    <span>Advanced Attendance Tracking</span>
-                  </div>
-                  <div className="flex items-center">
-                    <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
-                    <span>Payroll Processing</span>
-                  </div>
-                  <div className="flex items-center">
-                    <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
-                    <span>Basic Recruitment Tools</span>
-                  </div>
-                  <div className="flex items-center">
-                    <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
-                    <span>Up to 100 employees</span>
-                  </div>
-                </div>
-                <div className="mt-8">
-                  <Button className="w-full">
-                    Choose Professional
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <PricingCard
+              title="Professional"
+              price={19}
+              description="For growing businesses"
+              features={[
+                { text: "Everything in Starter" },
+                { text: "Advanced Attendance Tracking" },
+                { text: "Payroll Processing" },
+                { text: "Basic Recruitment Tools" },
+                { text: "Up to 100 employees" },
+              ]}
+              isPopular={true}
+              buttonText="Choose Professional"
+              buttonVariant="default"
+              ctaLink="/register?plan=professional"
+            />
             
-            <Card className="border-border">
-              <CardContent className="pt-6">
-                <div className="text-center mb-6">
-                  <h3 className="text-xl font-medium">Enterprise</h3>
-                  <div className="mt-4 flex items-baseline justify-center">
-                    <span className="text-4xl font-bold">$39</span>
-                    <span className="ml-1 text-muted-foreground">/ user / month</span>
-                  </div>
-                  <p className="mt-2 text-sm text-muted-foreground">For large organizations</p>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-center">
-                    <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
-                    <span>Everything in Professional</span>
-                  </div>
-                  <div className="flex items-center">
-                    <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
-                    <span>Advanced Analytics</span>
-                  </div>
-                  <div className="flex items-center">
-                    <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
-                    <span>Custom Integrations</span>
-                  </div>
-                  <div className="flex items-center">
-                    <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
-                    <span>Advanced Recruitment Suite</span>
-                  </div>
-                  <div className="flex items-center">
-                    <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
-                    <span>Unlimited employees</span>
-                  </div>
-                </div>
-                <div className="mt-8">
-                  <Button className="w-full" variant="outline">
-                    Contact Sales
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <PricingCard
+              title="Enterprise"
+              price={39}
+              description="For large organizations"
+              features={[
+                { text: "Everything in Professional" },
+                { text: "Advanced Analytics" },
+                { text: "Custom Integrations" },
+                { text: "Advanced Recruitment Suite" },
+                { text: "Unlimited employees" },
+              ]}
+              buttonText="Contact Sales"
+              buttonVariant="outline"
+              ctaLink="/register?plan=enterprise"
+            />
           </div>
         </div>
       </section>
