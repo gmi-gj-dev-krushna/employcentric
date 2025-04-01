@@ -17,7 +17,8 @@ import {
   X,
   Bell,
   ChevronDown,
-  UserCircle
+  UserCircle,
+  UserRound,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -78,10 +79,16 @@ const navItems: NavItem[] = [
     roles: ["admin", "hr"],
   },
   {
+    label: "Profile",
+    icon: <UserRound className="h-5 w-5" />,
+    href: "/profile",
+    roles: ["admin", "hr", "manager", "employee"],
+  },
+  {
     label: "Settings",
     icon: <Settings className="h-5 w-5" />,
     href: "/settings",
-    roles: ["admin"],
+    roles: ["admin", "hr", "manager", "employee"],
   },
 ];
 
@@ -258,13 +265,20 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link to="/profile">Profile</Link>
+                  <Link to="/profile">
+                    <UserRound className="h-4 w-4 mr-2" />
+                    Profile
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/settings">Settings</Link>
+                  <Link to="/settings">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Settings
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={logout} className="text-destructive">
+                  <LogOut className="h-4 w-4 mr-2" />
                   Log out
                 </DropdownMenuItem>
               </DropdownMenuContent>
