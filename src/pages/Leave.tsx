@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import {
@@ -50,6 +49,7 @@ import { Badge } from "@/components/ui/badge";
 import { format, differenceInDays, addDays } from "date-fns";
 import { Calendar as CalendarIcon, Check, X, Clock, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { DateRange } from "react-day-picker";
 
 // Mock data for leave requests
 const leaveRequests = [
@@ -113,10 +113,7 @@ const leaveBalances = {
 
 const LeaveManagement = () => {
   const { toast } = useToast();
-  const [dateRange, setDateRange] = useState<{
-    from: Date | undefined;
-    to: Date | undefined;
-  }>({
+  const [dateRange, setDateRange] = useState<DateRange>({
     from: undefined,
     to: undefined,
   });
