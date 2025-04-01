@@ -2,6 +2,7 @@
 import { useState } from "react";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import {
   Card,
   CardContent,
@@ -29,7 +30,7 @@ import {
 
 const Settings = () => {
   const { user } = useAuth();
-  const [theme, setTheme] = useState("light");
+  const { theme, setTheme } = useTheme();
   const [notifications, setNotifications] = useState({
     email: true,
     push: false,
