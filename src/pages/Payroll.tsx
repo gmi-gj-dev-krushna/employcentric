@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import {
   Card,
@@ -60,113 +59,66 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-// Mock data for payroll
-const payrollData = [
-  {
-    id: "P2023071",
-    employeeId: "1",
-    employeeName: "John Smith",
-    avatar: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=256&h=256&fit=crop&auto=format",
-    department: "Engineering",
-    position: "Senior Developer",
-    payPeriod: "July 2023",
-    payDate: "2023-07-28",
-    grossPay: 5800.00,
-    deductions: 1450.00,
-    netPay: 4350.00,
-    status: "paid",
-  },
-  {
-    id: "P2023072",
-    employeeId: "2",
-    employeeName: "Sarah Johnson",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=256&h=256&fit=crop&auto=format",
-    department: "Marketing",
-    position: "Marketing Manager",
-    payPeriod: "July 2023",
-    payDate: "2023-07-28",
-    grossPay: 6200.00,
-    deductions: 1550.00,
-    netPay: 4650.00,
-    status: "paid",
-  },
-  {
-    id: "P2023073",
-    employeeId: "3",
-    employeeName: "Michael Brown",
-    avatar: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=256&h=256&fit=crop&auto=format",
-    department: "HR",
-    position: "HR Specialist",
-    payPeriod: "July 2023",
-    payDate: "2023-07-28",
-    grossPay: 4800.00,
-    deductions: 1200.00,
-    netPay: 3600.00,
-    status: "paid",
-  },
-  {
-    id: "P2023081",
-    employeeId: "1",
-    employeeName: "John Smith",
-    avatar: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=256&h=256&fit=crop&auto=format",
-    department: "Engineering",
-    position: "Senior Developer",
-    payPeriod: "August 2023",
-    payDate: "2023-08-28",
-    grossPay: 5800.00,
-    deductions: 1450.00,
-    netPay: 4350.00,
-    status: "processing",
-  },
-  {
-    id: "P2023082",
-    employeeId: "2",
-    employeeName: "Sarah Johnson",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=256&h=256&fit=crop&auto=format",
-    department: "Marketing",
-    position: "Marketing Manager",
-    payPeriod: "August 2023",
-    payDate: "2023-08-28",
-    grossPay: 6200.00,
-    deductions: 1550.00,
-    netPay: 4650.00,
-    status: "processing",
-  },
-];
-
-// Mock data for payslip details
-const payslipDetails = {
-  basicSalary: 4800.00,
-  overtime: 420.00,
-  bonus: 580.00,
-  incomeTax: 980.00,
-  socialSecurity: 290.00,
-  healthInsurance: 180.00,
-  workingDays: 22,
-  overtimeHours: 12,
-  bankAccount: "•••• •••• •••• 1234",
-  bankName: "CitiBank",
-};
+import { payrollApi, PayrollRecord, PayrollStats } from "@/api/payrollApi";
 
 const Payroll = () => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPeriod, setSelectedPeriod] = useState("all");
+  const [payrollRecords, setPayrollRecords] = useState<PayrollRecord[]>([]);
+  const [payrollStats, setPayrollStats] = useState<PayrollStats | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
-  // Filter payroll data based on search and period
-  const filteredPayroll = payrollData.filter((item) => {
-    const matchesSearch = item.employeeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         item.id.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesPeriod = selectedPeriod === "all" || 
-                         item.payPeriod === selectedPeriod;
-    
-    return matchesSearch && matchesPeriod;
+  useEffect(() => {
+    fetchPayrollData();
+    fetchPayrollStats();
+  }, []);
+
+  const fetchPayrollData = async () => {
+    try {
+      setIsLoading(true);
+      let data;
+      
+      if (selectedPeriod !== "all") {
+        data = await payrollApi.getPayrollsByPeriod(selectedPeriod);
+      } else {
+        data = await payrollApi.getAllPayrolls();
+      }
+      
+      setPayrollRecords(data);
+    } catch (error) {
+      console.error("Failed to fetch payroll data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load payroll data",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchPayrollStats = async () => {
+    try {
+      const data = await payrollApi.getPayrollStats();
+      setPayrollStats(data);
+    } catch (error) {
+      console.error("Failed to fetch payroll stats:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchPayrollData();
+  }, [selectedPeriod]);
+  
+  // Filter payroll data based on search
+  const filteredPayroll = payrollRecords.filter((item) => {
+    return item.employeeId.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           item._id.toLowerCase().includes(searchQuery.toLowerCase());
   });
   
   // Get unique pay periods for filter
-  const payPeriods = Array.from(new Set(payrollData.map(item => item.payPeriod)));
+  const payPeriods = Array.from(new Set(payrollRecords.map(item => item.payPeriod)));
   
   // Handler for payslip generation
   const handleGeneratePayslips = () => {
@@ -221,9 +173,12 @@ const Payroll = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$32,450.00</div>
+              <div className="text-2xl font-bold">
+                ${payrollStats?.totalPayroll.toFixed(2) || '0.00'}
+              </div>
               <p className="text-xs text-muted-foreground mt-1">
-                +2.5% from last month
+                {payrollStats && payrollStats.percentChange > 0 ? '+' : ''}
+                {payrollStats?.percentChange.toFixed(1) || '0.0'}% from last month
               </p>
             </CardContent>
           </Card>
@@ -235,9 +190,11 @@ const Payroll = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$4,650.00</div>
+              <div className="text-2xl font-bold">
+                ${payrollStats?.averageSalary.toFixed(2) || '0.00'}
+              </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Based on 7 employees
+                Based on {payrollStats?.employeeCount || 0} employees
               </p>
             </CardContent>
           </Card>
@@ -249,9 +206,15 @@ const Payroll = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">August 28, 2023</div>
+              <div className="text-2xl font-bold">
+                {payrollStats?.nextPayrollDate 
+                  ? format(new Date(payrollStats.nextPayrollDate), "MMMM d, yyyy")
+                  : "Not scheduled"}
+              </div>
               <p className="text-xs text-muted-foreground mt-1">
-                5 working days remaining
+                {payrollStats?.nextPayrollDate 
+                  ? `${Math.ceil((new Date(payrollStats.nextPayrollDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} working days remaining`
+                  : "No payroll scheduled"}
               </p>
             </CardContent>
           </Card>
@@ -305,232 +268,240 @@ const Payroll = () => {
           <TabsContent value="payrolls" className="mt-4">
             <Card>
               <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Employee</TableHead>
-                      <TableHead>Pay Period</TableHead>
-                      <TableHead>Pay Date</TableHead>
-                      <TableHead>Gross Pay</TableHead>
-                      <TableHead>Net Pay</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredPayroll.length > 0 ? (
-                      filteredPayroll.map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell className="font-medium">{item.id}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              <Avatar className="h-8 w-8">
-                                <AvatarImage src={item.avatar} />
-                                <AvatarFallback>
-                                  {item.employeeName.split(" ").map((n) => n[0]).join("")}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <div>{item.employeeName}</div>
-                                <div className="text-xs text-muted-foreground">
-                                  {item.position}
+                {isLoading ? (
+                  <div className="flex justify-center items-center p-8">
+                    <div className="h-8 w-8 border-2 border-current border-r-transparent animate-spin rounded-full"></div>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Employee</TableHead>
+                        <TableHead>Pay Period</TableHead>
+                        <TableHead>Pay Date</TableHead>
+                        <TableHead>Gross Pay</TableHead>
+                        <TableHead>Net Pay</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredPayroll.length > 0 ? (
+                        filteredPayroll.map((item) => (
+                          <TableRow key={item._id}>
+                            <TableCell className="font-medium">{item._id}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <Avatar className="h-8 w-8">
+                                  <AvatarImage src={item.employeeId.avatar} />
+                                  <AvatarFallback>
+                                    {item.employeeId.name.split(" ").map((n) => n[0]).join("")}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <div>{item.employeeId.name}</div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {item.employeeId.position}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>{item.payPeriod}</TableCell>
-                          <TableCell>{format(new Date(item.payDate), "PP")}</TableCell>
-                          <TableCell>${item.grossPay.toFixed(2)}</TableCell>
-                          <TableCell>${item.netPay.toFixed(2)}</TableCell>
-                          <TableCell>
-                            <Badge
-                              variant="outline"
-                              className={`
-                                ${item.status === "paid" ? "bg-green-50 text-green-700 border-green-200" : ""}
-                                ${item.status === "processing" ? "bg-yellow-50 text-yellow-700 border-yellow-200" : ""}
-                              `}
-                            >
-                              {item.status === "paid" && <CheckCircle2 className="mr-1 h-3 w-3" />}
-                              {item.status === "processing" && <Clock className="mr-1 h-3 w-3" />}
-                              {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <Dialog>
-                                  <DialogTrigger asChild>
-                                    <DropdownMenuItem onSelect={e => e.preventDefault()}>
-                                      <FileText className="mr-2 h-4 w-4" />
-                                      View Payslip
-                                    </DropdownMenuItem>
-                                  </DialogTrigger>
-                                  <DialogContent className="sm:max-w-[600px]">
-                                    <DialogHeader>
-                                      <DialogTitle>Payslip Details</DialogTitle>
-                                      <DialogDescription>
-                                        Payslip for {item.employeeName} - {item.payPeriod}
-                                      </DialogDescription>
-                                    </DialogHeader>
-                                    <div className="space-y-6 py-4">
-                                      {/* Employee info */}
-                                      <div className="flex items-start justify-between">
-                                        <div className="flex items-center gap-3">
-                                          <Avatar className="h-10 w-10">
-                                            <AvatarImage src={item.avatar} />
-                                            <AvatarFallback>
-                                              {item.employeeName.split(" ").map((n) => n[0]).join("")}
-                                            </AvatarFallback>
-                                          </Avatar>
-                                          <div>
-                                            <div className="font-medium">{item.employeeName}</div>
-                                            <div className="text-sm text-muted-foreground">
-                                              {item.position} - {item.department}
+                            </TableCell>
+                            <TableCell>{item.payPeriod}</TableCell>
+                            <TableCell>{format(new Date(item.payDate), "PP")}</TableCell>
+                            <TableCell>${item.grossPay.toFixed(2)}</TableCell>
+                            <TableCell>${item.netPay.toFixed(2)}</TableCell>
+                            <TableCell>
+                              <Badge
+                                variant="outline"
+                                className={`
+                                  ${item.status === "paid" ? "bg-green-50 text-green-700 border-green-200" : ""}
+                                  ${item.status === "processing" ? "bg-yellow-50 text-yellow-700 border-yellow-200" : ""}
+                                  ${item.status === "pending" ? "bg-gray-50 text-gray-700 border-gray-200" : ""}
+                                `}
+                              >
+                                {item.status === "paid" && <CheckCircle2 className="mr-1 h-3 w-3" />}
+                                {item.status === "processing" && <Clock className="mr-1 h-3 w-3" />}
+                                {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <Dialog>
+                                    <DialogTrigger asChild>
+                                      <DropdownMenuItem onSelect={e => e.preventDefault()}>
+                                        <FileText className="mr-2 h-4 w-4" />
+                                        View Payslip
+                                      </DropdownMenuItem>
+                                    </DialogTrigger>
+                                    <DialogContent className="sm:max-w-[600px]">
+                                      <DialogHeader>
+                                        <DialogTitle>Payslip Details</DialogTitle>
+                                        <DialogDescription>
+                                          Payslip for {item.employeeId.name} - {item.payPeriod}
+                                        </DialogDescription>
+                                      </DialogHeader>
+                                      <div className="space-y-6 py-4">
+                                        {/* Employee info */}
+                                        <div className="flex items-start justify-between">
+                                          <div className="flex items-center gap-3">
+                                            <Avatar className="h-10 w-10">
+                                              <AvatarImage src={item.employeeId.avatar} />
+                                              <AvatarFallback>
+                                                {item.employeeId.name.split(" ").map((n) => n[0]).join("")}
+                                              </AvatarFallback>
+                                            </Avatar>
+                                            <div>
+                                              <div className="font-medium">{item.employeeId.name}</div>
+                                              <div className="text-sm text-muted-foreground">
+                                                {item.employeeId.position} - {item.employeeId.department}
+                                              </div>
                                             </div>
                                           </div>
-                                        </div>
-                                        <div className="text-right">
-                                          <Badge
-                                            variant="outline"
-                                            className={`
-                                              ${item.status === "paid" ? "bg-green-50 text-green-700 border-green-200" : ""}
-                                              ${item.status === "processing" ? "bg-yellow-50 text-yellow-700 border-yellow-200" : ""}
-                                            `}
-                                          >
-                                            {item.status === "paid" && <CheckCircle2 className="mr-1 h-3 w-3" />}
-                                            {item.status === "processing" && <Clock className="mr-1 h-3 w-3" />}
-                                            {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-                                          </Badge>
-                                          <div className="text-sm mt-1 text-muted-foreground">ID: {item.id}</div>
-                                        </div>
-                                      </div>
-                                      
-                                      {/* Payslip header */}
-                                      <div className="grid grid-cols-2 gap-4 py-4 border-y">
-                                        <div className="flex items-center gap-2">
-                                          <CalendarDays className="h-4 w-4 text-muted-foreground" />
-                                          <div>
-                                            <div className="text-sm text-muted-foreground">Pay Period</div>
-                                            <div className="font-medium">{item.payPeriod}</div>
+                                          <div className="text-right">
+                                            <Badge
+                                              variant="outline"
+                                              className={`
+                                                ${item.status === "paid" ? "bg-green-50 text-green-700 border-green-200" : ""}
+                                                ${item.status === "processing" ? "bg-yellow-50 text-yellow-700 border-yellow-200" : ""}
+                                                ${item.status === "pending" ? "bg-gray-50 text-gray-700 border-gray-200" : ""}
+                                              `}
+                                            >
+                                              {item.status === "paid" && <CheckCircle2 className="mr-1 h-3 w-3" />}
+                                              {item.status === "processing" && <Clock className="mr-1 h-3 w-3" />}
+                                              {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                                            </Badge>
+                                            <div className="text-sm mt-1 text-muted-foreground">ID: {item._id}</div>
                                           </div>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                          <Calendar className="h-4 w-4 text-muted-foreground" />
-                                          <div>
-                                            <div className="text-sm text-muted-foreground">Pay Date</div>
-                                            <div className="font-medium">{format(new Date(item.payDate), "PP")}</div>
-                                          </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                          <CreditCard className="h-4 w-4 text-muted-foreground" />
-                                          <div>
-                                            <div className="text-sm text-muted-foreground">Bank Account</div>
-                                            <div className="font-medium">{payslipDetails.bankAccount}</div>
-                                          </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                          <FileText className="h-4 w-4 text-muted-foreground" />
-                                          <div>
-                                            <div className="text-sm text-muted-foreground">Working Days</div>
-                                            <div className="font-medium">{payslipDetails.workingDays} days ({payslipDetails.overtimeHours} hrs overtime)</div>
-                                          </div>
-                                        </div>
-                                      </div>
-                                      
-                                      {/* Payslip details */}
-                                      <div className="grid grid-cols-2 gap-6">
-                                        {/* Earnings */}
-                                        <div>
-                                          <h4 className="font-medium mb-3">Earnings</h4>
-                                          <div className="space-y-2">
-                                            <div className="flex justify-between">
-                                              <span className="text-sm">Basic Salary</span>
-                                              <span className="text-sm font-medium">${payslipDetails.basicSalary.toFixed(2)}</span>
+                                        
+                                        {/* Payslip header */}
+                                        <div className="grid grid-cols-2 gap-4 py-4 border-y">
+                                          <div className="flex items-center gap-2">
+                                            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                                            <div>
+                                              <div className="text-sm text-muted-foreground">Pay Period</div>
+                                              <div className="font-medium">{item.payPeriod}</div>
                                             </div>
-                                            <div className="flex justify-between">
-                                              <span className="text-sm">Overtime</span>
-                                              <span className="text-sm font-medium">${payslipDetails.overtime.toFixed(2)}</span>
+                                          </div>
+                                          <div className="flex items-center gap-2">
+                                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                                            <div>
+                                              <div className="text-sm text-muted-foreground">Pay Date</div>
+                                              <div className="font-medium">{format(new Date(item.payDate), "PP")}</div>
                                             </div>
-                                            <div className="flex justify-between">
-                                              <span className="text-sm">Bonus</span>
-                                              <span className="text-sm font-medium">${payslipDetails.bonus.toFixed(2)}</span>
+                                          </div>
+                                          <div className="flex items-center gap-2">
+                                            <CreditCard className="h-4 w-4 text-muted-foreground" />
+                                            <div>
+                                              <div className="text-sm text-muted-foreground">Bank Account</div>
+                                              <div className="font-medium">{item.bankAccount}</div>
                                             </div>
-                                            <div className="flex justify-between pt-2 border-t">
-                                              <span className="font-medium">Gross Pay</span>
-                                              <span className="font-medium">${item.grossPay.toFixed(2)}</span>
+                                          </div>
+                                          <div className="flex items-center gap-2">
+                                            <FileText className="h-4 w-4 text-muted-foreground" />
+                                            <div>
+                                              <div className="text-sm text-muted-foreground">Working Days</div>
+                                              <div className="font-medium">{item.details.workingDays} days ({item.details.overtimeHours} hrs overtime)</div>
                                             </div>
                                           </div>
                                         </div>
                                         
-                                        {/* Deductions */}
-                                        <div>
-                                          <h4 className="font-medium mb-3">Deductions</h4>
-                                          <div className="space-y-2">
-                                            <div className="flex justify-between">
-                                              <span className="text-sm">Income Tax</span>
-                                              <span className="text-sm font-medium">${payslipDetails.incomeTax.toFixed(2)}</span>
+                                        {/* Payslip details */}
+                                        <div className="grid grid-cols-2 gap-6">
+                                          {/* Earnings */}
+                                          <div>
+                                            <h4 className="font-medium mb-3">Earnings</h4>
+                                            <div className="space-y-2">
+                                              <div className="flex justify-between">
+                                                <span className="text-sm">Basic Salary</span>
+                                                <span className="text-sm font-medium">${item.details.basicSalary.toFixed(2)}</span>
+                                              </div>
+                                              <div className="flex justify-between">
+                                                <span className="text-sm">Overtime</span>
+                                                <span className="text-sm font-medium">${item.details.overtime.toFixed(2)}</span>
+                                              </div>
+                                              <div className="flex justify-between">
+                                                <span className="text-sm">Bonus</span>
+                                                <span className="text-sm font-medium">${item.details.bonus.toFixed(2)}</span>
+                                              </div>
+                                              <div className="flex justify-between pt-2 border-t">
+                                                <span className="font-medium">Gross Pay</span>
+                                                <span className="font-medium">${item.grossPay.toFixed(2)}</span>
+                                              </div>
                                             </div>
-                                            <div className="flex justify-between">
-                                              <span className="text-sm">Social Security</span>
-                                              <span className="text-sm font-medium">${payslipDetails.socialSecurity.toFixed(2)}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                              <span className="text-sm">Health Insurance</span>
-                                              <span className="text-sm font-medium">${payslipDetails.healthInsurance.toFixed(2)}</span>
-                                            </div>
-                                            <div className="flex justify-between pt-2 border-t">
-                                              <span className="font-medium">Total Deductions</span>
-                                              <span className="font-medium">${item.deductions.toFixed(2)}</span>
+                                          </div>
+                                          
+                                          {/* Deductions */}
+                                          <div>
+                                            <h4 className="font-medium mb-3">Deductions</h4>
+                                            <div className="space-y-2">
+                                              <div className="flex justify-between">
+                                                <span className="text-sm">Income Tax</span>
+                                                <span className="text-sm font-medium">${item.details.incomeTax.toFixed(2)}</span>
+                                              </div>
+                                              <div className="flex justify-between">
+                                                <span className="text-sm">Social Security</span>
+                                                <span className="text-sm font-medium">${item.details.socialSecurity.toFixed(2)}</span>
+                                              </div>
+                                              <div className="flex justify-between">
+                                                <span className="text-sm">Health Insurance</span>
+                                                <span className="text-sm font-medium">${item.details.healthInsurance.toFixed(2)}</span>
+                                              </div>
+                                              <div className="flex justify-between pt-2 border-t">
+                                                <span className="font-medium">Total Deductions</span>
+                                                <span className="font-medium">${item.deductions.toFixed(2)}</span>
+                                              </div>
                                             </div>
                                           </div>
                                         </div>
-                                      </div>
-                                      
-                                      {/* Net pay */}
-                                      <div className="bg-muted p-4 rounded-lg">
-                                        <div className="flex justify-between items-center">
-                                          <span className="font-medium">Net Pay</span>
-                                          <span className="text-xl font-bold">${item.netPay.toFixed(2)}</span>
+                                        
+                                        {/* Net pay */}
+                                        <div className="bg-muted p-4 rounded-lg">
+                                          <div className="flex justify-between items-center">
+                                            <span className="font-medium">Net Pay</span>
+                                            <span className="text-xl font-bold">${item.netPay.toFixed(2)}</span>
+                                          </div>
                                         </div>
                                       </div>
-                                    </div>
-                                    <DialogFooter className="gap-2">
-                                      <Button variant="outline">Send via Email</Button>
-                                      <Button onClick={() => handleDownloadPayslip(item.id)}>
-                                        <Download className="mr-2 h-4 w-4" />
-                                        Download PDF
-                                      </Button>
-                                    </DialogFooter>
-                                  </DialogContent>
-                                </Dialog>
-                                <DropdownMenuItem onClick={() => handleDownloadPayslip(item.id)}>
-                                  <Download className="mr-2 h-4 w-4" />
-                                  Download
-                                </DropdownMenuItem>
-                                <DropdownMenuItem>
-                                  <Mail className="mr-2 h-4 w-4" />
-                                  Email
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                                      <DialogFooter className="gap-2">
+                                        <Button variant="outline">Send via Email</Button>
+                                        <Button onClick={() => handleDownloadPayslip(item._id)}>
+                                          <Download className="mr-2 h-4 w-4" />
+                                          Download PDF
+                                        </Button>
+                                      </DialogFooter>
+                                    </DialogContent>
+                                  </Dialog>
+                                  <DropdownMenuItem onClick={() => handleDownloadPayslip(item._id)}>
+                                    <Download className="mr-2 h-4 w-4" />
+                                    Download
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem>
+                                    <Mail className="mr-2 h-4 w-4" />
+                                    Email
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={8} className="h-24 text-center">
+                            No payroll records found
                           </TableCell>
                         </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={8} className="h-24 text-center">
-                          No payroll records found
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                      )}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

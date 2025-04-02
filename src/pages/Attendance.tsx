@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -18,114 +18,120 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { format, startOfToday, endOfMonth, startOfMonth, eachDayOfInterval } from "date-fns";
+import { format } from "date-fns";
 import { CircleCheck, CircleX, Calendar as CalendarIcon, Clock, ArrowUpDown } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-
-// Mock data for attendance records
-const attendanceRecords = [
-  {
-    id: 1,
-    employeeId: "1",
-    name: "John Smith",
-    avatar: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=256&h=256&fit=crop&auto=format",
-    checkIn: "2023-07-24T08:27:33",
-    checkOut: "2023-07-24T17:05:12",
-    status: "present",
-  },
-  {
-    id: 2,
-    employeeId: "2",
-    name: "Sarah Johnson",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=256&h=256&fit=crop&auto=format",
-    checkIn: "2023-07-24T09:03:15",
-    checkOut: "2023-07-24T18:12:33",
-    status: "present",
-  },
-  {
-    id: 3,
-    employeeId: "3",
-    name: "Michael Brown",
-    avatar: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=256&h=256&fit=crop&auto=format",
-    checkIn: null,
-    checkOut: null,
-    status: "absent",
-  },
-  {
-    id: 4,
-    employeeId: "4",
-    name: "Emily Wilson",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=256&h=256&fit=crop&auto=format",
-    checkIn: "2023-07-24T08:55:42",
-    checkOut: "2023-07-24T17:30:21",
-    status: "present",
-  },
-  {
-    id: 5,
-    employeeId: "5",
-    name: "David Lee",
-    avatar: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=256&h=256&fit=crop&auto=format",
-    checkIn: "2023-07-24T08:15:00",
-    checkOut: null,
-    status: "present",
-  },
-];
-
-// Generate mock data for monthly attendance summary
-const generateMonthlySummary = () => {
-  const today = startOfToday();
-  const monthStart = startOfMonth(today);
-  const monthEnd = endOfMonth(today);
-  const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
-  
-  return daysInMonth.map(day => ({
-    date: format(day, 'yyyy-MM-dd'),
-    status: Math.random() > 0.1 ? 'present' : Math.random() > 0.5 ? 'absent' : 'leave',
-    checkIn: Math.random() > 0.1 ? `${format(day, 'yyyy-MM-dd')}T${String(8 + Math.floor(Math.random() * 2)).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}:00` : null,
-    checkOut: Math.random() > 0.1 ? `${format(day, 'yyyy-MM-dd')}T${String(16 + Math.floor(Math.random() * 3)).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}:00` : null,
-  }));
-};
-
-const monthlySummary = generateMonthlySummary();
+import { attendanceApi, AttendanceRecord, AttendanceStats } from "@/api/attendanceApi";
 
 const Attendance = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [isCheckingIn, setIsCheckingIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const [userAttendance, setUserAttendance] = useState<AttendanceRecord[]>([]);
+  const [stats, setStats] = useState<AttendanceStats | null>(null);
   
-  const handleCheckIn = () => {
-    setIsCheckingIn(true);
+  useEffect(() => {
+    fetchTodayAttendance();
+    if (user?.id) {
+      fetchUserAttendance(user.id);
+    }
+    fetchAttendanceStats();
+  }, [user]);
+
+  const fetchTodayAttendance = async () => {
+    try {
+      setIsLoading(true);
+      const records = await attendanceApi.getTodayAttendance();
+      setAttendanceRecords(records);
+    } catch (error) {
+      console.error("Failed to fetch attendance records:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load attendance data",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchUserAttendance = async (userId: string) => {
+    try {
+      const records = await attendanceApi.getMonthlyAttendance(userId);
+      setUserAttendance(records);
+    } catch (error) {
+      console.error("Failed to fetch user attendance:", error);
+    }
+  };
+
+  const fetchAttendanceStats = async () => {
+    try {
+      const data = await attendanceApi.getAttendanceStats();
+      setStats(data);
+    } catch (error) {
+      console.error("Failed to fetch attendance stats:", error);
+    }
+  };
+
+  const handleCheckIn = async () => {
+    if (!user?.id) return;
     
-    // Simulating API call
-    setTimeout(() => {
+    setIsCheckingIn(true);
+    try {
+      await attendanceApi.checkIn(user.id);
+      fetchTodayAttendance();
+      fetchUserAttendance(user.id);
+      
       toast({
         title: "Check-in successful",
         description: `You've checked in at ${format(new Date(), "hh:mm a")}`,
       });
+    } catch (error: any) {
+      toast({
+        title: "Check-in failed",
+        description: error.response?.data?.error || "An error occurred during check-in",
+        variant: "destructive",
+      });
+    } finally {
       setIsCheckingIn(false);
-    }, 1000);
+    }
   };
   
-  const handleCheckOut = () => {
-    setIsCheckingIn(true);
+  const handleCheckOut = async () => {
+    if (!user?.id) return;
     
-    // Simulating API call
-    setTimeout(() => {
+    setIsCheckingIn(true);
+    try {
+      await attendanceApi.checkOut(user.id);
+      fetchTodayAttendance();
+      fetchUserAttendance(user.id);
+      
       toast({
         title: "Check-out successful",
         description: `You've checked out at ${format(new Date(), "hh:mm a")}`,
       });
+    } catch (error: any) {
+      toast({
+        title: "Check-out failed",
+        description: error.response?.data?.error || "An error occurred during check-out",
+        variant: "destructive",
+      });
+    } finally {
       setIsCheckingIn(false);
-    }, 1000);
+    }
   };
   
-  // Determine if user has already checked in/out based on mock data
-  const userRecord = attendanceRecords.find(record => record.employeeId === user?.id);
+  // Determine if user has already checked in/out based on attendance records
+  const userRecord = attendanceRecords.find(
+    record => record.employeeId._id === user?.id
+  );
   const hasCheckedIn = !!userRecord?.checkIn;
   const hasCheckedOut = !!userRecord?.checkOut;
-  
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -195,52 +201,66 @@ const Attendance = () => {
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold mb-4">Team Attendance Today</h3>
                   <div className="rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Employee</TableHead>
-                          <TableHead>Check In</TableHead>
-                          <TableHead>Check Out</TableHead>
-                          <TableHead>Status</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {attendanceRecords.map((record) => (
-                          <TableRow key={record.id}>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <Avatar className="h-6 w-6">
-                                  <AvatarImage src={record.avatar} />
-                                  <AvatarFallback>
-                                    {record.name.split(" ").map((n) => n[0]).join("")}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <span>{record.name}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              {record.checkIn
-                                ? format(new Date(record.checkIn), "hh:mm a")
-                                : "--:--"}
-                            </TableCell>
-                            <TableCell>
-                              {record.checkOut
-                                ? format(new Date(record.checkOut), "hh:mm a")
-                                : "--:--"}
-                            </TableCell>
-                            <TableCell>
-                              <div className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                                record.status === "present"
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-red-100 text-red-800"
-                              }`}>
-                                {record.status === "present" ? "Present" : "Absent"}
-                              </div>
-                            </TableCell>
+                    {isLoading ? (
+                      <div className="flex justify-center items-center p-8">
+                        <div className="h-8 w-8 border-2 border-current border-r-transparent animate-spin rounded-full"></div>
+                      </div>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Employee</TableHead>
+                            <TableHead>Check In</TableHead>
+                            <TableHead>Check Out</TableHead>
+                            <TableHead>Status</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {attendanceRecords.length > 0 ? (
+                            attendanceRecords.map((record) => (
+                              <TableRow key={record._id}>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    <Avatar className="h-6 w-6">
+                                      <AvatarImage src={record.employeeId.avatar} />
+                                      <AvatarFallback>
+                                        {record.employeeId.name.split(" ").map((n) => n[0]).join("")}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <span>{record.employeeId.name}</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  {record.checkIn
+                                    ? format(new Date(record.checkIn), "hh:mm a")
+                                    : "--:--"}
+                                </TableCell>
+                                <TableCell>
+                                  {record.checkOut
+                                    ? format(new Date(record.checkOut), "hh:mm a")
+                                    : "--:--"}
+                                </TableCell>
+                                <TableCell>
+                                  <div className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                    record.status === "present"
+                                      ? "bg-green-100 text-green-800"
+                                      : "bg-red-100 text-red-800"
+                                  }`}>
+                                    {record.status === "present" ? "Present" : "Absent"}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          ) : (
+                            <TableRow>
+                              <TableCell colSpan={4} className="h-24 text-center">
+                                No attendance records for today
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    )}
                   </div>
                 </div>
                 
@@ -267,35 +287,37 @@ const Attendance = () => {
                       </PopoverContent>
                     </Popover>
                     
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">Present:</span>
-                        <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 rounded-full bg-green-500" />
-                          <span className="text-sm">
-                            {monthlySummary.filter(d => d.status === 'present').length} days
-                          </span>
+                    {stats && (
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium">Present:</span>
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 rounded-full bg-green-500" />
+                            <span className="text-sm">
+                              {stats.monthlyStats.present} days
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium">Absent:</span>
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 rounded-full bg-red-500" />
+                            <span className="text-sm">
+                              {stats.monthlyStats.absent} days
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium">Leave:</span>
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                            <span className="text-sm">
+                              {stats.monthlyStats.leave} days
+                            </span>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">Absent:</span>
-                        <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 rounded-full bg-red-500" />
-                          <span className="text-sm">
-                            {monthlySummary.filter(d => d.status === 'absent').length} days
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">Leave:</span>
-                        <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                          <span className="text-sm">
-                            {monthlySummary.filter(d => d.status === 'leave').length} days
-                          </span>
-                        </div>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -326,37 +348,51 @@ const Attendance = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {monthlySummary.slice(0, 10).map((day, index) => (
-                  <TableRow key={index}>
-                    <TableCell>{format(new Date(day.date), "MMM dd, yyyy")}</TableCell>
-                    <TableCell>
-                      {day.checkIn ? format(new Date(day.checkIn), "hh:mm a") : "--:--"}
-                    </TableCell>
-                    <TableCell>
-                      {day.checkOut ? format(new Date(day.checkOut), "hh:mm a") : "--:--"}
-                    </TableCell>
-                    <TableCell>
-                      {day.checkIn && day.checkOut
-                        ? ((new Date(day.checkOut).getTime() - new Date(day.checkIn).getTime()) / (1000 * 60 * 60)).toFixed(2) + " hrs"
-                        : "--"}
-                    </TableCell>
-                    <TableCell>
-                      <div className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                        day.status === "present"
-                          ? "bg-green-100 text-green-800"
-                          : day.status === "absent"
-                          ? "bg-red-100 text-red-800"
-                          : "bg-yellow-100 text-yellow-800"
-                      }`}>
-                        {day.status === "present"
-                          ? "Present"
-                          : day.status === "absent"
-                          ? "Absent"
-                          : "On Leave"}
-                      </div>
+                {userAttendance.length > 0 ? (
+                  userAttendance.map((record) => {
+                    const checkInTime = record.checkIn ? new Date(record.checkIn) : null;
+                    const checkOutTime = record.checkOut ? new Date(record.checkOut) : null;
+                    const workingHours = checkInTime && checkOutTime 
+                      ? ((checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60 * 60)).toFixed(2)
+                      : "--";
+                    
+                    return (
+                      <TableRow key={record._id}>
+                        <TableCell>{format(new Date(record.date), "MMM dd, yyyy")}</TableCell>
+                        <TableCell>
+                          {record.checkIn ? format(new Date(record.checkIn), "hh:mm a") : "--:--"}
+                        </TableCell>
+                        <TableCell>
+                          {record.checkOut ? format(new Date(record.checkOut), "hh:mm a") : "--:--"}
+                        </TableCell>
+                        <TableCell>
+                          {workingHours} {workingHours !== "--" ? "hrs" : ""}
+                        </TableCell>
+                        <TableCell>
+                          <div className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                            record.status === "present"
+                              ? "bg-green-100 text-green-800"
+                              : record.status === "absent"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-yellow-100 text-yellow-800"
+                          }`}>
+                            {record.status === "present"
+                              ? "Present"
+                              : record.status === "absent"
+                              ? "Absent"
+                              : "On Leave"}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center">
+                      No attendance records found
                     </TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </CardContent>

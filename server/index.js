@@ -2,22 +2,45 @@
 const express = require('express');
 const cors = require('cors');
 const http = require('http');
-const socketIo = require('socket.io');
-const passport = require('passport');
-const session = require('express-session');
+const socketIO = require('socket.io');
+const cookieParser = require('cookie-parser');
 const config = require('./config/config');
 const connectDB = require('./config/database');
-const configurePassport = require('./config/passport');
-const { httpLogger, info } = require('./utils/logger');
+const logger = require('./utils/logger');
 
-// Import routes
+// Route imports
 const authRoutes = require('./routes/authRoutes');
 const leaveRoutes = require('./routes/leaveRoutes');
+const employeeRoutes = require('./routes/employeeRoutes');
+const attendanceRoutes = require('./routes/attendanceRoutes');
+const payrollRoutes = require('./routes/payrollRoutes');
 
-// Initialize Express app
+// Connect to MongoDB
+connectDB();
+
+// Initialize express app
 const app = express();
+
+// Middleware
+app.use(express.json());
+app.use(cookieParser());
+app.use(cors({
+  origin: config.corsOrigin,
+  credentials: true,
+}));
+
+// API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/leaves', leaveRoutes);
+app.use('/api/employees', employeeRoutes);
+app.use('/api/attendance', attendanceRoutes);
+app.use('/api/payroll', payrollRoutes);
+
+// Create HTTP server
 const server = http.createServer(app);
-const io = socketIo(server, {
+
+// Initialize Socket.io
+const io = socketIO(server, {
   cors: {
     origin: config.corsOrigin,
     methods: ["GET", "POST"],
@@ -25,62 +48,32 @@ const io = socketIo(server, {
   }
 });
 
-// Connect to MongoDB
-connectDB();
-
-// Middleware
-app.use(cors({
-  origin: config.corsOrigin,
-  credentials: true
-}));
-app.use(express.json());
-app.use(httpLogger);
-
-// Session configuration
-app.use(session({
-  secret: config.sessionSecret,
-  resave: false,
-  saveUninitialized: false,
-  cookie: { secure: config.nodeEnv === 'production', maxAge: 24 * 60 * 60 * 1000 } // 1 day
-}));
-
-// Initialize passport
-app.use(passport.initialize());
-app.use(passport.session());
-configurePassport();
-
-// Make io available to routes
-app.set('io', io);
-
 // Socket.io connection handler
 io.on('connection', (socket) => {
-  info(`New client connected: ${socket.id}`);
+  logger.info(`New socket connection: ${socket.id}`);
 
   socket.on('authenticate', (userId) => {
-    // Associate socket with user
+    logger.info(`User ${userId} authenticated on socket ${socket.id}`);
     socket.join(userId);
-    info(`User ${userId} authenticated on socket ${socket.id}`);
   });
 
   socket.on('disconnect', () => {
-    info(`Client disconnected: ${socket.id}`);
+    logger.info(`Socket disconnected: ${socket.id}`);
   });
 });
 
-// API routes
-app.use('/api/auth', authRoutes);
-app.use('/api/leaves', leaveRoutes);
+// Make io accessible to our routes
+app.set('io', io);
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Internal server error' });
-});
-
-// Server start
+// Start server
 const PORT = config.port;
 server.listen(PORT, () => {
-  info(`Server running on port ${PORT} in ${config.nodeEnv} mode`);
+  logger.info(`Server running in ${config.nodeEnv} mode on port ${PORT}`);
 });
 
-module.exports = { app, server };
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (err, promise) => {
+  logger.error(`Error: ${err.message}`);
+  // Close server & exit process
+  server.close(() => process.exit(1));
+});
