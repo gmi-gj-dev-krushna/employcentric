@@ -2,7 +2,7 @@
 const passport = require('passport');
 
 // Authentication middleware
-const isAuthenticated = (req, res, next) => {
+exports.protect = (req, res, next) => {
   if (req.isAuthenticated()) {
     return next();
   }
@@ -10,7 +10,7 @@ const isAuthenticated = (req, res, next) => {
 };
 
 // Role-based access control middleware
-const hasRole = (roles) => {
+exports.authorize = (...roles) => {
   return (req, res, next) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: 'Unauthorized' });
@@ -20,9 +20,4 @@ const hasRole = (roles) => {
     }
     return res.status(403).json({ message: 'Forbidden' });
   };
-};
-
-module.exports = {
-  isAuthenticated,
-  hasRole
 };
