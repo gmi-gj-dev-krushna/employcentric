@@ -4,7 +4,7 @@ const router = express.Router();
 const authController = require('../controllers/authController');
 const { userValidation } = require('../utils/validation');
 const validate = require('../middlewares/validator');
-const { isAuthenticated } = require('../middlewares/auth');
+const { protect } = require('../middlewares/auth');
 
 // Register route
 router.post('/register', validate(userValidation.register), authController.register);
@@ -16,6 +16,6 @@ router.post('/login', validate(userValidation.login), authController.login);
 router.post('/logout', authController.logout);
 
 // Get current user route
-router.get('/me', isAuthenticated, authController.getCurrentUser);
+router.get('/me', protect, authController.getCurrentUser);
 
 module.exports = router;
