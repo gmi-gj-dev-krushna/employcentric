@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Mail } from "lucide-react";
 
 const Login = () => {
-  const { login, loginWithGoogle, isLoading } = useAuth();
+  const { login, isLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -31,6 +31,7 @@ const Login = () => {
     }
   };
 
+  // Removed the "Sign in with Google" button since that functionality isn't implemented
   return (
     <AuthLayout 
       title="Log in to your account"
@@ -38,28 +39,6 @@ const Login = () => {
     >
       <div className="mt-8">
         <div className="mt-6">
-          <Button 
-            variant="outline" 
-            type="button" 
-            className="w-full flex items-center justify-center gap-2"
-            onClick={loginWithGoogle}
-            disabled={isLoading}
-          >
-            <Mail className="h-4 w-4" />
-            Sign in with Google
-          </Button>
-
-          <div className="mt-6 relative">
-            <div className="absolute inset-0 flex items-center">
-              <Separator className="w-full" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Or continue with
-              </span>
-            </div>
-          </div>
-
           <form onSubmit={handleLogin} className="mt-6 space-y-6">
             <div className="space-y-2">
               <Label htmlFor="email">Email address</Label>

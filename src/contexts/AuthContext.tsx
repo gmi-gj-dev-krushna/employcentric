@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -23,6 +22,7 @@ export interface User {
   role: UserRole;
   company?: string;
   phone?: string;
+  avatar?: string; // Added avatar property
 }
 
 interface AuthContextType {
