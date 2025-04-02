@@ -6,7 +6,7 @@ const logger = require('../utils/logger');
 // Register new user
 const register = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, company, phone } = req.body;
     
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -19,7 +19,9 @@ const register = async (req, res) => {
       name,
       email,
       password,
-      role
+      role,
+      company,
+      phone
     });
     
     await user.save();
@@ -29,10 +31,14 @@ const register = async (req, res) => {
       id: user._id,
       name: user.name,
       email: user.email,
-      role: user.role
+      role: user.role,
+      company: user.company
     };
     
-    res.status(201).json({ user: userResponse });
+    res.status(201).json({ 
+      user: userResponse,
+      message: 'Account request submitted successfully' 
+    });
   } catch (error) {
     logger.error(`Registration error: ${error.message}`);
     res.status(500).json({ message: 'Server error' });

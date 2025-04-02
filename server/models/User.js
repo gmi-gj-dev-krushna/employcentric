@@ -21,6 +21,16 @@ const UserSchema = new mongoose.Schema({
     enum: ['admin', 'hr', 'employee'],
     default: 'employee'
   },
+  company: {
+    type: String
+  },
+  phone: {
+    type: String
+  },
+  isApproved: {
+    type: Boolean,
+    default: false
+  },
   createdAt: {
     type: Date,
     default: Date.now

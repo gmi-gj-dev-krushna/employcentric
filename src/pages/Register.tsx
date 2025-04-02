@@ -1,28 +1,76 @@
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import AuthLayout from "@/components/layouts/AuthLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import axios from "axios";
 
 const Register = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    company: "",
+    phone: "",
+    password: "tempPassword123", // Default password for account requests
+  });
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.id]: e.target.value
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // In a real app, this would call an API to create a new user account
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      // Prepare the data to send to the API
+      const registerData = {
+        name: `${formData.firstName} ${formData.lastName}`,
+        email: formData.email,
+        password: formData.password,
+        company: formData.company,
+        phone: formData.phone,
+        role: "employee" // Default role for new registrations
+      };
+      
+      // Make the API request to register
+      await axios.post('/api/auth/register', registerData);
+      
+      // Show success message
       toast({
-        title: "Request received",
+        title: "Account request submitted",
         description: "Your account request has been submitted to the administrator for approval.",
       });
-    }, 1500);
+      
+      // Redirect to login page after short delay
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
+    } catch (error) {
+      let errorMessage = "Failed to register. Please try again.";
+      
+      if (axios.isAxiosError(error) && error.response) {
+        errorMessage = error.response.data.message || errorMessage;
+      }
+      
+      toast({
+        title: "Registration failed",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -33,28 +81,54 @@ const Register = () => {
       <form onSubmit={handleSubmit} className="mt-6 space-y-6">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="first_name">First name</Label>
-            <Input id="first_name" required />
+            <Label htmlFor="firstName">First name</Label>
+            <Input 
+              id="firstName" 
+              required 
+              value={formData.firstName}
+              onChange={handleChange}
+            />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="last_name">Last name</Label>
-            <Input id="last_name" required />
+            <Label htmlFor="lastName">Last name</Label>
+            <Input 
+              id="lastName" 
+              required 
+              value={formData.lastName}
+              onChange={handleChange}
+            />
           </div>
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="email">Work email</Label>
-          <Input id="email" type="email" required />
+          <Input 
+            id="email" 
+            type="email" 
+            required 
+            value={formData.email}
+            onChange={handleChange}
+          />
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="company">Company</Label>
-          <Input id="company" required />
+          <Input 
+            id="company" 
+            required 
+            value={formData.company}
+            onChange={handleChange}
+          />
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="phone">Phone number</Label>
-          <Input id="phone" type="tel" />
+          <Input 
+            id="phone" 
+            type="tel" 
+            value={formData.phone}
+            onChange={handleChange}
+          />
         </div>
 
         <Button type="submit" className="w-full" disabled={isLoading}>
