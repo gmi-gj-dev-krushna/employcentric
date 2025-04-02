@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 
+const API_BASE_URL = "http://localhost:5000/api";
+
 const Register = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -44,7 +46,7 @@ const Register = () => {
       };
       
       // Make the API request to register
-      await axios.post('/api/auth/register', registerData);
+      await axios.post(`${API_BASE_URL}/auth/register`, registerData);
       
       // Show success message
       toast({

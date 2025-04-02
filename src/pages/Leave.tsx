@@ -24,6 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { format, differenceInDays } from "date-fns";
+import axios from "axios";
 import {
   CalendarIcon,
   CheckCircle,
@@ -50,11 +51,13 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
+const API_BASE_URL = "http://localhost:5000/api";
+
 interface LeaveRequest {
-  id: string;
+  _id: string;
   userId: string;
   userName: string;
-  type: string;
+  leaveType: string;
   startDate: string;
   endDate: string;
   reason: string;
@@ -107,16 +110,11 @@ const LeaveManagement = () => {
   const fetchLeaveRequests = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("http://localhost:3000/api/leaves", {
-        credentials: "include",
+      const response = await axios.get(`${API_BASE_URL}/leaves`, {
+        withCredentials: true
       });
       
-      if (!response.ok) {
-        throw new Error("Failed to fetch leave requests");
-      }
-      
-      const data = await response.json();
-      setLeaveRequests(data);
+      setLeaveRequests(response.data);
     } catch (error) {
       console.error("Error fetching leave requests:", error);
       toast({
@@ -144,25 +142,16 @@ const LeaveManagement = () => {
     try {
       setIsSubmitting(true);
       
-      const response = await fetch("http://localhost:3000/api/leaves", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          type: leaveType,
+      const response = await axios.post(
+        `${API_BASE_URL}/leaves`, 
+        {
+          leaveType,
           startDate: startDate.toISOString(),
           endDate: endDate.toISOString(),
           reason,
-        }),
-        credentials: "include",
-      });
-      
-      if (!response.ok) {
-        throw new Error("Failed to submit leave request");
-      }
-      
-      const newLeave = await response.json();
+        },
+        { withCredentials: true }
+      );
       
       toast({
         title: "Success",
@@ -177,11 +166,17 @@ const LeaveManagement = () => {
       setOpenDialog(false);
       
       // Update leave requests list
-      setLeaveRequests([newLeave, ...leaveRequests]);
+      fetchLeaveRequests();
     } catch (error) {
+      let errorMessage = "Failed to submit leave request";
+      
+      if (axios.isAxiosError(error) && error.response) {
+        errorMessage = error.response.data.message || errorMessage;
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to submit leave request",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -191,32 +186,29 @@ const LeaveManagement = () => {
 
   const handleApprove = async (leaveId: string) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/leaves/${leaveId}/approve`, {
-        method: "PUT",
-        credentials: "include",
-      });
-      
-      if (!response.ok) {
-        throw new Error("Failed to approve leave request");
-      }
-      
-      const updatedLeave = await response.json();
+      await axios.put(
+        `${API_BASE_URL}/leaves/${leaveId}/approve`, 
+        {},
+        { withCredentials: true }
+      );
       
       toast({
         title: "Success",
         description: "Leave request approved",
       });
       
-      // Update the leave request in the list
-      setLeaveRequests(
-        leaveRequests.map((leave) =>
-          leave.id === leaveId ? updatedLeave : leave
-        )
-      );
+      // Update the leave requests list
+      fetchLeaveRequests();
     } catch (error) {
+      let errorMessage = "Failed to approve leave request";
+      
+      if (axios.isAxiosError(error) && error.response) {
+        errorMessage = error.response.data.message || errorMessage;
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to approve leave request",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -232,46 +224,34 @@ const LeaveManagement = () => {
     if (!rejectingLeaveId) return;
     
     try {
-      const response = await fetch(
-        `http://localhost:3000/api/leaves/${rejectingLeaveId}/reject`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            reason: rejectionReason,
-          }),
-          credentials: "include",
-        }
+      await axios.put(
+        `${API_BASE_URL}/leaves/${rejectingLeaveId}/reject`,
+        { reason: rejectionReason },
+        { withCredentials: true }
       );
-      
-      if (!response.ok) {
-        throw new Error("Failed to reject leave request");
-      }
-      
-      const updatedLeave = await response.json();
       
       toast({
         title: "Success",
         description: "Leave request rejected",
       });
       
-      // Update the leave request in the list
-      setLeaveRequests(
-        leaveRequests.map((leave) =>
-          leave.id === rejectingLeaveId ? updatedLeave : leave
-        )
-      );
+      // Update the leave requests list
+      fetchLeaveRequests();
       
       // Close dialog and reset state
       setOpenRejectDialog(false);
       setRejectingLeaveId(null);
       setRejectionReason("");
     } catch (error) {
+      let errorMessage = "Failed to reject leave request";
+      
+      if (axios.isAxiosError(error) && error.response) {
+        errorMessage = error.response.data.message || errorMessage;
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to reject leave request",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -474,9 +454,9 @@ const LeaveManagement = () => {
                 </TableHeader>
                 <TableBody>
                   {leaveRequests.map((leave) => (
-                    <TableRow key={leave.id}>
+                    <TableRow key={leave._id}>
                       <TableCell className="font-medium capitalize">
-                        {leave.type} Leave
+                        {leave.leaveType} Leave
                       </TableCell>
                       <TableCell>
                         {calculateDuration(leave.startDate, leave.endDate)}
@@ -500,7 +480,7 @@ const LeaveManagement = () => {
                                 size="sm"
                                 variant="outline"
                                 className="text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700"
-                                onClick={() => handleApprove(leave.id)}
+                                onClick={() => handleApprove(leave._id)}
                               >
                                 Approve
                               </Button>
@@ -508,7 +488,7 @@ const LeaveManagement = () => {
                                 size="sm"
                                 variant="outline"
                                 className="text-red-600 border-red-600 hover:bg-red-50 hover:text-red-700"
-                                onClick={() => openRejectDialogForLeave(leave.id)}
+                                onClick={() => openRejectDialogForLeave(leave._id)}
                               >
                                 Reject
                               </Button>

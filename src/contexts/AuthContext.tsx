@@ -1,7 +1,18 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import io from "socket.io-client";
+import axios from "axios";
+
+// API base URL
+const API_BASE_URL = "http://localhost:5000/api";
+
+// Create socket.io instance
+const socketInstance = io("http://localhost:5000", {
+  autoConnect: false,
+  withCredentials: true
+});
 
 export type UserRole = "admin" | "hr" | "manager" | "employee";
 
@@ -10,9 +21,8 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
-  avatar?: string;
-  department?: string;
-  position?: string;
+  company?: string;
+  phone?: string;
 }
 
 interface AuthContextType {
@@ -21,7 +31,6 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
   logout: () => void;
   updateUser: (userData: Partial<User>) => void;
   socket: any;
@@ -40,12 +49,6 @@ export const useAuth = () => {
 interface AuthProviderProps {
   children: ReactNode;
 }
-
-// Create socket.io instance
-const socketInstance = io("http://localhost:3000", {
-  autoConnect: false,
-  withCredentials: true
-});
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
@@ -99,20 +102,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const fetchCurrentUser = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/me', {
-        credentials: 'include'
+      const response = await axios.get(`${API_BASE_URL}/auth/me`, {
+        withCredentials: true
       });
       
-      if (response.ok) {
-        const data = await response.json();
-        setUser(data.user);
+      if (response.status === 200) {
+        setUser(response.data.user);
       } else {
         // Session expired or invalid
         logout();
       }
     } catch (error) {
       console.error("Failed to fetch current user:", error);
-      // Keep the user logged in if server is unavailable (for offline support)
+      // If server is unavailable, logout for security
+      logout();
     } finally {
       setIsLoading(false);
     }
@@ -122,88 +125,40 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       setIsLoading(true);
       
-      const response = await fetch('http://localhost:3000/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-        credentials: 'include'
-      });
+      const response = await axios.post(`${API_BASE_URL}/auth/login`, 
+        { email, password },
+        { withCredentials: true }
+      );
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Login failed');
-      }
-      
-      const data = await response.json();
+      const { user: userData } = response.data;
       
       // Save to state and localStorage
-      setUser(data.user);
-      setToken("session-auth"); // We're using session cookies, so this is just a flag
-      localStorage.setItem("user", JSON.stringify(data.user));
+      setUser(userData);
+      setToken("session-auth"); // Using session cookies
+      localStorage.setItem("user", JSON.stringify(userData));
       localStorage.setItem("token", "session-auth");
       
       // Connect socket and authenticate
       socket.connect();
-      socket.emit('authenticate', data.user.id);
+      socket.emit('authenticate', userData.id);
       
       toast({
         title: "Login successful",
-        description: `Welcome back, ${data.user.name}!`,
+        description: `Welcome back, ${userData.name}!`,
       });
       
       // Redirect to dashboard
       navigate("/dashboard");
     } catch (error) {
+      let errorMessage = "Invalid email or password";
+      
+      if (axios.isAxiosError(error) && error.response) {
+        errorMessage = error.response.data.message || errorMessage;
+      }
+      
       toast({
         title: "Login failed",
-        description: error instanceof Error ? error.message : "Invalid email or password",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // For demo purposes, using the mock login since we don't have Google OAuth configured on the server
-  const loginWithGoogle = async () => {
-    try {
-      setIsLoading(true);
-      
-      // Mock Google SSO
-      // In a real app, this would integrate with Google OAuth
-      
-      toast({
-        title: "Google Sign-In",
-        description: "This would initiate Google OAuth flow in a real app",
-      });
-      
-      // For demo purposes, let's create a mock user
-      const mockUser: User = {
-        id: "google-123",
-        name: "Google User",
-        email: "user@gmail.com",
-        role: "employee",
-        avatar: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=256&h=256&fit=crop&auto=format",
-      };
-      
-      const mockToken = "mock-google-sso-token";
-      
-      setUser(mockUser);
-      setToken(mockToken);
-      localStorage.setItem("user", JSON.stringify(mockUser));
-      localStorage.setItem("token", mockToken);
-      
-      // Connect socket and authenticate
-      socket.connect();
-      socket.emit('authenticate', mockUser.id);
-      
-      navigate("/dashboard");
-    } catch (error) {
-      toast({
-        title: "Google Sign-In failed",
-        description: "Could not authenticate with Google",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -214,9 +169,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const logout = async () => {
     try {
       // Call logout API
-      await fetch('http://localhost:3000/api/logout', {
-        method: 'POST',
-        credentials: 'include'
+      await axios.post(`${API_BASE_URL}/auth/logout`, {}, {
+        withCredentials: true
       });
     } catch (error) {
       console.error("Logout API error:", error);
@@ -255,7 +209,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         isLoading,
         isAuthenticated: !!user,
         login,
-        loginWithGoogle,
         logout,
         updateUser,
         socket,
