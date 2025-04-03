@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,10 +19,11 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { format } from "date-fns";
-import { CircleCheck, CircleX, Calendar as CalendarIcon, Clock, ArrowUpDown } from "lucide-react";
+import { CircleCheck, CircleX, Calendar as CalendarIcon, Clock, ArrowUpDown, AlertCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { attendanceApi, AttendanceRecord, AttendanceStats } from "@/api/attendanceApi";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const Attendance = () => {
   const { user } = useAuth();
@@ -29,16 +31,26 @@ const Attendance = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [isCheckingIn, setIsCheckingIn] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [userAttendance, setUserAttendance] = useState<AttendanceRecord[]>([]);
   const [stats, setStats] = useState<AttendanceStats | null>(null);
   const [hasStatAccess, setHasStatAccess] = useState(false);
   
   useEffect(() => {
+    if (!user) {
+      console.log("No user found, skipping data fetch");
+      setIsLoading(false);
+      return;
+    }
+    
+    console.log("User found:", user);
     fetchTodayAttendance();
+    
     if (user?.id) {
       fetchUserAttendance(user.id);
       
+      // Check if user has stats access
       const adminRoles = ['admin', 'hr', 'manager'];
       if (user.role && adminRoles.includes(user.role)) {
         setHasStatAccess(true);
@@ -50,10 +62,14 @@ const Attendance = () => {
   const fetchTodayAttendance = async () => {
     try {
       setIsLoading(true);
+      setError(null);
+      console.log("Fetching today's attendance...");
       const records = await attendanceApi.getTodayAttendance();
+      console.log("Today's attendance records:", records);
       setAttendanceRecords(records);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to fetch attendance records:", error);
+      setError("Failed to load today's attendance data");
       toast({
         title: "Error",
         description: "Failed to load attendance data",
@@ -66,16 +82,27 @@ const Attendance = () => {
 
   const fetchUserAttendance = async (userId: string) => {
     try {
+      console.log(`Fetching attendance for user ${userId}...`);
       const records = await attendanceApi.getMonthlyAttendance(userId);
+      console.log("User attendance records:", records);
       setUserAttendance(records);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to fetch user attendance:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load your attendance history",
+        variant: "destructive",
+      });
     }
   };
 
   const fetchAttendanceStats = async () => {
+    if (!hasStatAccess) return;
+    
     try {
+      console.log("Fetching attendance stats...");
       const data = await attendanceApi.getAttendanceStats();
+      console.log("Attendance stats:", data);
       setStats(data);
     } catch (error: any) {
       console.error("Failed to fetch attendance stats:", error);
@@ -138,7 +165,7 @@ const Attendance = () => {
   };
   
   const userRecord = attendanceRecords.find(
-    record => record.employeeId._id === user?.id
+    record => record?.employeeId?._id === user?.id
   );
   const hasCheckedIn = !!userRecord?.checkIn;
   const hasCheckedOut = !!userRecord?.checkOut;
@@ -152,6 +179,14 @@ const Attendance = () => {
             View and manage attendance records
           </p>
         </div>
+        
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
         
         <Card>
           <CardHeader>
@@ -226,18 +261,18 @@ const Attendance = () => {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {attendanceRecords.length > 0 ? (
+                          {attendanceRecords && attendanceRecords.length > 0 ? (
                             attendanceRecords.map((record) => (
                               <TableRow key={record._id}>
                                 <TableCell>
                                   <div className="flex items-center gap-2">
                                     <Avatar className="h-6 w-6">
-                                      <AvatarImage src={record.employeeId.avatar} />
+                                      <AvatarImage src={record.employeeId?.avatar} />
                                       <AvatarFallback>
-                                        {record.employeeId.name.split(" ").map((n) => n[0]).join("")}
+                                        {record.employeeId?.name ? record.employeeId.name.split(" ").map((n) => n[0]).join("") : "?"}
                                       </AvatarFallback>
                                     </Avatar>
-                                    <span>{record.employeeId.name}</span>
+                                    <span>{record.employeeId?.name || "Unknown"}</span>
                                   </div>
                                 </TableCell>
                                 <TableCell>
@@ -254,9 +289,11 @@ const Attendance = () => {
                                   <div className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                                     record.status === "present"
                                       ? "bg-green-100 text-green-800"
+                                      : record.status === "leave"
+                                      ? "bg-yellow-100 text-yellow-800"
                                       : "bg-red-100 text-red-800"
                                   }`}>
-                                    {record.status === "present" ? "Present" : "Absent"}
+                                    {record.status === "present" ? "Present" : record.status === "leave" ? "On Leave" : "Absent"}
                                   </div>
                                 </TableCell>
                               </TableRow>
@@ -264,7 +301,7 @@ const Attendance = () => {
                           ) : (
                             <TableRow>
                               <TableCell colSpan={4} className="h-24 text-center">
-                                No attendance records for today
+                                {isLoading ? "Loading..." : "No attendance records for today"}
                               </TableCell>
                             </TableRow>
                           )}
@@ -297,7 +334,7 @@ const Attendance = () => {
                       </PopoverContent>
                     </Popover>
                     
-                    {stats && hasStatAccess && (
+                    {stats && hasStatAccess ? (
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-medium">Present:</span>
@@ -326,6 +363,10 @@ const Attendance = () => {
                             </span>
                           </div>
                         </div>
+                      </div>
+                    ) : (
+                      <div className="text-center text-muted-foreground py-4">
+                        {hasStatAccess ? "Loading stats..." : "Statistics not available"}
                       </div>
                     )}
                   </div>
@@ -357,7 +398,7 @@ const Attendance = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {userAttendance.length > 0 ? (
+                {userAttendance && userAttendance.length > 0 ? (
                   userAttendance.map((record) => {
                     const checkInTime = record.checkIn ? new Date(record.checkIn) : null;
                     const checkOutTime = record.checkOut ? new Date(record.checkOut) : null;
@@ -398,7 +439,7 @@ const Attendance = () => {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={5} className="h-24 text-center">
-                      No attendance records found
+                      {isLoading ? "Loading..." : "No attendance records found"}
                     </TableCell>
                   </TableRow>
                 )}

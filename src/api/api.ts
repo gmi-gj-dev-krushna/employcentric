@@ -21,10 +21,24 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       // Handle unauthorized access (e.g., session expired)
       if (window.location.pathname !== '/login') {
-        localStorage.removeItem('user');
         window.location.href = '/login';
       }
     }
+    
+    // Log the error for debugging
+    console.error('API Error:', error.response?.data || error.message);
+    
+    return Promise.reject(error);
+  }
+);
+
+// Add a request interceptor to handle request preparation
+api.interceptors.request.use(
+  config => {
+    console.log(`Request to: ${config.method?.toUpperCase()} ${config.url}`);
+    return config;
+  },
+  error => {
     return Promise.reject(error);
   }
 );

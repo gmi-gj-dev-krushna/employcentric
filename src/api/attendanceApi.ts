@@ -36,7 +36,7 @@ export const attendanceApi = {
       return response.data.data;
     } catch (error) {
       console.error('Failed to fetch today attendance:', error);
-      return [];
+      throw error;
     }
   },
 
@@ -48,7 +48,7 @@ export const attendanceApi = {
       return response.data.data;
     } catch (error) {
       console.error('Failed to fetch monthly attendance:', error);
-      return [];
+      throw error;
     }
   },
 
@@ -66,8 +66,13 @@ export const attendanceApi = {
 
   // Get attendance stats
   getAttendanceStats: async (date?: Date): Promise<AttendanceStats> => {
-    const params = date ? `?date=${date.toISOString()}` : '';
-    const response = await api.get(`/attendance/stats${params}`);
-    return response.data.data;
+    try {
+      const params = date ? `?date=${date.toISOString()}` : '';
+      const response = await api.get(`/attendance/stats${params}`);
+      return response.data.data;
+    } catch (error) {
+      console.error('Failed to fetch attendance stats:', error);
+      throw error;
+    }
   }
 };
