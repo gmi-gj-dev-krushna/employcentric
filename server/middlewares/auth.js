@@ -10,14 +10,17 @@ exports.protect = (req, res, next) => {
 };
 
 // Role-based access control middleware
-exports.authorize = (roles) => {
+exports.authorize = (...roles) => {
   return (req, res, next) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
-    if (roles.includes(req.user.role)) {
-      return next();
+    
+    // Check if user has the required role
+    if (!req.user.role || !roles.includes(req.user.role)) {
+      return res.status(403).json({ message: 'Forbidden: Insufficient permissions' });
     }
-    return res.status(403).json({ message: 'Forbidden' });
+    
+    return next();
   };
 };

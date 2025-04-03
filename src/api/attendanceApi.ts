@@ -31,15 +31,25 @@ export interface AttendanceStats {
 export const attendanceApi = {
   // Get today's attendance
   getTodayAttendance: async (): Promise<AttendanceRecord[]> => {
-    const response = await api.get('/attendance/today');
-    return response.data.data;
+    try {
+      const response = await api.get('/attendance/today');
+      return response.data.data;
+    } catch (error) {
+      console.error('Failed to fetch today attendance:', error);
+      return [];
+    }
   },
 
   // Get monthly attendance for a specific employee
   getMonthlyAttendance: async (employeeId: string, date?: Date): Promise<AttendanceRecord[]> => {
-    const params = date ? `?date=${date.toISOString()}` : '';
-    const response = await api.get(`/attendance/${employeeId}${params}`);
-    return response.data.data;
+    try {
+      const params = date ? `?date=${date.toISOString()}` : '';
+      const response = await api.get(`/attendance/${employeeId}${params}`);
+      return response.data.data;
+    } catch (error) {
+      console.error('Failed to fetch monthly attendance:', error);
+      return [];
+    }
   },
 
   // Check in

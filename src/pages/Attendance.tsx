@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,13 +32,19 @@ const Attendance = () => {
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [userAttendance, setUserAttendance] = useState<AttendanceRecord[]>([]);
   const [stats, setStats] = useState<AttendanceStats | null>(null);
+  const [hasStatAccess, setHasStatAccess] = useState(false);
   
   useEffect(() => {
     fetchTodayAttendance();
     if (user?.id) {
       fetchUserAttendance(user.id);
+      
+      const adminRoles = ['admin', 'hr', 'manager'];
+      if (user.role && adminRoles.includes(user.role)) {
+        setHasStatAccess(true);
+        fetchAttendanceStats();
+      }
     }
-    fetchAttendanceStats();
   }, [user]);
 
   const fetchTodayAttendance = async () => {
@@ -72,8 +77,15 @@ const Attendance = () => {
     try {
       const data = await attendanceApi.getAttendanceStats();
       setStats(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to fetch attendance stats:", error);
+      if (error.response?.status === 403) {
+        toast({
+          title: "Access Denied",
+          description: "You don't have permission to view attendance statistics",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -125,7 +137,6 @@ const Attendance = () => {
     }
   };
   
-  // Determine if user has already checked in/out based on attendance records
   const userRecord = attendanceRecords.find(
     record => record.employeeId._id === user?.id
   );
@@ -142,7 +153,6 @@ const Attendance = () => {
           </p>
         </div>
         
-        {/* Check-in/Check-out Card */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -287,7 +297,7 @@ const Attendance = () => {
                       </PopoverContent>
                     </Popover>
                     
-                    {stats && (
+                    {stats && hasStatAccess && (
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-medium">Present:</span>
@@ -325,7 +335,6 @@ const Attendance = () => {
           </CardContent>
         </Card>
         
-        {/* Detailed Records */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
