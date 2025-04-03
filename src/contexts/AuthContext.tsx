@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -22,12 +23,11 @@ export interface User {
   role: UserRole;
   company?: string;
   phone?: string;
-  avatar?: string; // Added avatar property
+  avatar?: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
@@ -52,21 +52,18 @@ interface AuthProviderProps {
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [socket, setSocket] = useState<any>(socketInstance);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Initialize auth state from localStorage
+  // Initialize auth state from localStorage user data only
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
-    const storedToken = localStorage.getItem("token");
     
-    if (storedToken && storedUser) {
+    if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
       setUser(parsedUser);
-      setToken(storedToken);
       
       // Connect socket and authenticate
       socket.connect();
@@ -108,13 +105,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       if (response.status === 200) {
         setUser(response.data.user);
+        localStorage.setItem("user", JSON.stringify(response.data.user));
       } else {
         // Session expired or invalid
         logout();
       }
     } catch (error) {
       console.error("Failed to fetch current user:", error);
-      // If server is unavailable, logout for security
+      // If server is unavailable or session is invalid, logout for security
       logout();
     } finally {
       setIsLoading(false);
@@ -125,18 +123,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       setIsLoading(true);
       
-      const response = await axios.post(`${API_BASE_URL}/auth/login`, 
+      const response = await axios.post(
+        `${API_BASE_URL}/auth/login`, 
         { email, password },
         { withCredentials: true }
       );
       
       const { user: userData } = response.data;
       
-      // Save to state and localStorage
+      // Save user to state and localStorage
       setUser(userData);
-      setToken("session-auth"); // Using session cookies
       localStorage.setItem("user", JSON.stringify(userData));
-      localStorage.setItem("token", "session-auth");
+      // No need to store token in localStorage with session cookies
       
       // Connect socket and authenticate
       socket.connect();
@@ -177,9 +175,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } finally {
       // Clean up even if API fails
       localStorage.removeItem("user");
-      localStorage.removeItem("token");
       setUser(null);
-      setToken(null);
       
       // Disconnect socket
       socket.disconnect();
@@ -205,7 +201,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     <AuthContext.Provider
       value={{
         user,
-        token,
         isLoading,
         isAuthenticated: !!user,
         login,

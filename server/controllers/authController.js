@@ -49,13 +49,15 @@ const register = async (req, res) => {
 const login = (req, res, next) => {
   passport.authenticate('local', (err, user, info) => {
     if (err) {
+      logger.error(`Login error: ${err.message}`);
       return next(err);
     }
     if (!user) {
-      return res.status(400).json({ message: info.message });
+      return res.status(400).json({ message: info.message || 'Invalid credentials' });
     }
     req.logIn(user, (err) => {
       if (err) {
+        logger.error(`Session login error: ${err.message}`);
         return next(err);
       }
       // Remove password from response
@@ -73,14 +75,17 @@ const login = (req, res, next) => {
 // Logout user
 const logout = (req, res) => {
   req.logout(function(err) {
-    if (err) { return res.status(500).json({ message: 'Logout failed' }); }
+    if (err) { 
+      logger.error(`Logout error: ${err.message}`);
+      return res.status(500).json({ message: 'Logout failed' }); 
+    }
     res.status(200).json({ message: 'Logged out successfully' });
   });
 };
 
 // Get current user
 const getCurrentUser = (req, res) => {
-  if (!req.user) {
+  if (!req.isAuthenticated()) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
   
