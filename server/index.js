@@ -4,9 +4,12 @@ const cors = require('cors');
 const http = require('http');
 const socketIO = require('socket.io');
 const cookieParser = require('cookie-parser');
+const passport = require('passport');
+const session = require('express-session');
 const config = require('./config/config');
 const connectDB = require('./config/database');
 const logger = require('./utils/logger');
+const initPassport = require('./config/passport');
 
 // Route imports
 const authRoutes = require('./routes/authRoutes');
@@ -28,6 +31,24 @@ app.use(cors({
   origin: config.corsOrigin,
   credentials: true,
 }));
+
+// Setup express-session
+app.use(session({
+  secret: config.sessionSecret || 'employcentric_secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { 
+    secure: config.nodeEnv === 'production',
+    maxAge: 24 * 60 * 60 * 1000 // 1 day
+  }
+}));
+
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Initialize Passport configuration
+initPassport();
 
 // API Routes
 app.use('/api/auth', authRoutes);
