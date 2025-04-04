@@ -7,7 +7,9 @@ const userValidation = {
     name: Joi.string().required(),
     email: Joi.string().email().required(),
     password: Joi.string().min(6).required(),
-    role: Joi.string().valid('admin', 'hr', 'employee').default('employee')
+    role: Joi.string().valid('admin', 'hr', 'employee').default('employee'),
+    company: Joi.string().allow('', null),
+    phone: Joi.string().allow('', null)
   }),
   login: Joi.object({
     email: Joi.string().email().required(),

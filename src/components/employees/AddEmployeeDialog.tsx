@@ -40,6 +40,8 @@ const AddEmployeeDialog = ({
     firstName: '',
     lastName: '',
     email: '',
+    phone: '',
+    company: '',
     department: '',
     position: '',
     role: 'employee', // Default role
@@ -75,6 +77,8 @@ const AddEmployeeDialog = ({
       firstName: '',
       lastName: '',
       email: '',
+      phone: '',
+      company: '',
       department: '',
       position: '',
       role: 'employee',
@@ -83,7 +87,7 @@ const AddEmployeeDialog = ({
 
   const handleSubmit = async () => {
     try {
-      const { firstName, lastName, role, ...rest } = formData;
+      const { firstName, lastName, role, phone, company, ...rest } = formData;
       
       const fullName = `${firstName} ${lastName}`;
       const temporaryPassword = generateTemporaryPassword();
@@ -96,7 +100,8 @@ const AddEmployeeDialog = ({
           email: rest.email,
           password: temporaryPassword,
           role: role,
-          company: "Your Company Name", // You could add a company field to the form
+          company: company,  // Add company field
+          phone: phone,      // Add phone field
         }, { withCredentials: true });
         
         userId = userResponse.data.user.id;
@@ -120,6 +125,8 @@ const AddEmployeeDialog = ({
         const newEmployee = {
           name: fullName,
           ...rest,
+          phone: phone,       // Include phone in the employee record
+          company: company,   // Include company in the employee record
           status: 'Active',
           joinDate: new Date().toISOString(),
           user: userId, // Add reference to the user account
@@ -185,6 +192,26 @@ const AddEmployeeDialog = ({
               value={formData.email}
               onChange={handleInputChange}
             />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col space-y-1.5">
+              <Label htmlFor="phone">Phone</Label>
+              <Input 
+                id="phone" 
+                placeholder="+1 (555) 123-4567" 
+                value={formData.phone}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div className="flex flex-col space-y-1.5">
+              <Label htmlFor="company">Company</Label>
+              <Input 
+                id="company" 
+                placeholder="ABC Company" 
+                value={formData.company}
+                onChange={handleInputChange}
+              />
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col space-y-1.5">
