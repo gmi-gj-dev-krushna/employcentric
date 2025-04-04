@@ -13,6 +13,12 @@ export interface Employee {
   company?: string;
   phone?: string;
   avatar?: string;
+  user?: {
+    _id: string;
+    email: string;
+    role: string;
+    isApproved: boolean;
+  };
   createdAt: string;
   updatedAt: string;
 }

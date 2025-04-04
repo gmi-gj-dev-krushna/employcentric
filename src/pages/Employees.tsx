@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import {
@@ -132,25 +131,18 @@ const Employees = () => {
       const fullName = `${firstName} ${lastName}`;
       const temporaryPassword = generateTemporaryPassword();
       
-      // First create the employee
-      const newEmployee = {
-        name: fullName,
-        ...rest,
-        status: 'Active',
-        joinDate: new Date().toISOString(),
-      };
-
-      const employee = await employeeApi.createEmployee(newEmployee);
-      
-      // Then create the user account with temporary password
+      // First create the user account with temporary password
+      let userId;
       try {
-        await axios.post(`${API_BASE_URL}/auth/register`, {
+        const userResponse = await axios.post(`${API_BASE_URL}/auth/register`, {
           name: fullName,
           email: rest.email,
           password: temporaryPassword,
           role: role,
           company: "Your Company Name", // You could add a company field to the form
         }, { withCredentials: true });
+        
+        userId = userResponse.data.user.id;
         
         toast({
           title: "User Account Created",
@@ -159,21 +151,35 @@ const Employees = () => {
       } catch (userError) {
         console.error("Error creating user account:", userError);
         toast({
-          title: "User Creation Warning",
-          description: "Employee created but user account creation failed. Please create the account manually.",
+          title: "User Creation Failed",
+          description: "Failed to create user account. Employee creation aborted.",
           variant: "destructive",
         });
+        return;
       }
       
-      await fetchEmployees();
-      
-      setShowAddDialog(false);
-      setFormData({ firstName: '', lastName: '', email: '', department: '', position: '', role: 'employee' });
-      
-      toast({
-        title: "Success",
-        description: "Employee added successfully",
-      });
+      // Then create the employee with reference to the user
+      if (userId) {
+        const newEmployee = {
+          name: fullName,
+          ...rest,
+          status: 'Active',
+          joinDate: new Date().toISOString(),
+          user: userId, // Add reference to the user account
+        };
+
+        await employeeApi.createEmployee(newEmployee);
+        
+        await fetchEmployees();
+        
+        setShowAddDialog(false);
+        setFormData({ firstName: '', lastName: '', email: '', department: '', position: '', role: 'employee' });
+        
+        toast({
+          title: "Success",
+          description: "Employee added successfully",
+        });
+      }
     } catch (error) {
       console.error("Failed to add employee:", error);
       toast({

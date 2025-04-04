@@ -39,6 +39,12 @@ const employeeSchema = new mongoose.Schema(
       type: String, 
       default: null,
     },
+    // Reference to the user account
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
   },
   {
     timestamps: true,
