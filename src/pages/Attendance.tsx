@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -214,6 +215,7 @@ const Attendance = () => {
               <div className="flex gap-3">
                 <Button 
                   onClick={handleCheckIn} 
+                  disabled={isCheckingIn || hasCheckedIn || hasCheckedOut}
                   className="w-32"
                 >
                   {isCheckingIn ? (
@@ -225,6 +227,7 @@ const Attendance = () => {
                 </Button>
                 <Button 
                   onClick={handleCheckOut} 
+                  disabled={isCheckingIn || !hasCheckedIn || hasCheckedOut}
                   variant="outline"
                   className="w-32"
                 >
