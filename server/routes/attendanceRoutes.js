@@ -14,7 +14,7 @@ const {
 
 // Protected routes
 router.get('/today', protect, getTodayAttendance);
-router.get('/stats', protect, authorize(['admin', 'hr', 'manager']), getAttendanceStats);
+router.get('/stats', protect, authorize(['admin', 'hr']), getAttendanceStats);
 router.get('/:employeeId', protect, getMonthlyAttendance);
 router.post('/check-in', protect, checkIn);
 router.post('/check-out', protect, checkOut);

@@ -4,9 +4,6 @@ import DashboardLayout from "@/components/layouts/DashboardLayout";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import {
   Table,
@@ -45,6 +42,21 @@ import { Plus, Search, MoreHorizontal, Filter } from "lucide-react";
 import { employeeApi } from "@/api/employeeApi";
 import { useToast } from "@/hooks/use-toast";
 import { Employee } from "@/api/employeeApi";
+import axios from "axios";
+
+const API_BASE_URL = "http://localhost:5000/api";
+
+// Function to generate random password
+const generateTemporaryPassword = () => {
+  const length = 10;
+  const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+  let password = "";
+  for (let i = 0; i < length; i++) {
+    const randomIndex = Math.floor(Math.random() * charset.length);
+    password += charset[randomIndex];
+  }
+  return password;
+};
 
 const Employees = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -61,6 +73,7 @@ const Employees = () => {
     email: '',
     department: '',
     position: '',
+    role: 'employee', // Default role
   });
 
   useEffect(() => {
@@ -108,22 +121,54 @@ const Employees = () => {
     setFormData(prev => ({ ...prev, department: value }));
   };
 
+  const handleRoleChange = (value: string) => {
+    setFormData(prev => ({ ...prev, role: value }));
+  };
+
   const handleSubmit = async () => {
     try {
-      const { firstName, lastName, ...rest } = formData;
+      const { firstName, lastName, role, ...rest } = formData;
       
+      const fullName = `${firstName} ${lastName}`;
+      const temporaryPassword = generateTemporaryPassword();
+      
+      // First create the employee
       const newEmployee = {
-        name: `${firstName} ${lastName}`,
+        name: fullName,
         ...rest,
         status: 'Active',
         joinDate: new Date().toISOString(),
       };
 
-      await employeeApi.createEmployee(newEmployee);
+      const employee = await employeeApi.createEmployee(newEmployee);
+      
+      // Then create the user account with temporary password
+      try {
+        await axios.post(`${API_BASE_URL}/auth/register`, {
+          name: fullName,
+          email: rest.email,
+          password: temporaryPassword,
+          role: role,
+          company: "Your Company Name", // You could add a company field to the form
+        }, { withCredentials: true });
+        
+        toast({
+          title: "User Account Created",
+          description: `Temporary password: ${temporaryPassword}`,
+        });
+      } catch (userError) {
+        console.error("Error creating user account:", userError);
+        toast({
+          title: "User Creation Warning",
+          description: "Employee created but user account creation failed. Please create the account manually.",
+          variant: "destructive",
+        });
+      }
+      
       await fetchEmployees();
       
       setShowAddDialog(false);
-      setFormData({ firstName: '', lastName: '', email: '', department: '', position: '' });
+      setFormData({ firstName: '', lastName: '', email: '', department: '', position: '', role: 'employee' });
       
       toast({
         title: "Success",
@@ -293,7 +338,7 @@ const Employees = () => {
           <DialogHeader>
             <DialogTitle>Add Employee</DialogTitle>
             <DialogDescription>
-              Add a new employee to your organization.
+              Add a new employee to your organization. A user account will automatically be created.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -355,6 +400,25 @@ const Employees = () => {
                   onChange={handleInputChange}
                 />
               </div>
+            </div>
+            <div className="flex flex-col space-y-1.5">
+              <Label htmlFor="role">System Role</Label>
+              <Select 
+                value={formData.role}
+                onValueChange={handleRoleChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="employee">Employee</SelectItem>
+                  <SelectItem value="hr">HR</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                A user account will be created with a temporary password
+              </p>
             </div>
           </div>
           <DialogFooter>

@@ -88,24 +88,29 @@ const LeaveManagement = () => {
   const [rejectingLeaveId, setRejectingLeaveId] = useState<string | null>(null);
   const [openRejectDialog, setOpenRejectDialog] = useState(false);
 
+  // Check if user has admin or HR permissions
+  const hasManagementPermissions = user?.role === 'admin' || user?.role === 'hr';
+
   // Fetch leave requests
   useEffect(() => {
     fetchLeaveRequests();
     
     // Setup real-time updates
-    socket.on('new-leave-request', () => {
-      fetchLeaveRequests();
-    });
-    
-    socket.on('leave-status-update', () => {
-      fetchLeaveRequests();
-    });
-    
-    return () => {
-      socket.off('new-leave-request');
-      socket.off('leave-status-update');
-    };
-  }, []);
+    if (socket) {
+      socket.on('new-leave-request', () => {
+        fetchLeaveRequests();
+      });
+      
+      socket.on('leave-status-update', () => {
+        fetchLeaveRequests();
+      });
+      
+      return () => {
+        socket.off('new-leave-request');
+        socket.off('leave-status-update');
+      };
+    }
+  }, [socket]);
 
   const fetchLeaveRequests = async () => {
     try {
@@ -186,6 +191,7 @@ const LeaveManagement = () => {
 
   const handleApprove = async (leaveId: string) => {
     try {
+      console.log("Approving leave", leaveId);
       await axios.put(
         `${API_BASE_URL}/leaves/${leaveId}/approve`, 
         {},
@@ -204,6 +210,7 @@ const LeaveManagement = () => {
       
       if (axios.isAxiosError(error) && error.response) {
         errorMessage = error.response.data.message || errorMessage;
+        console.error("Approval error:", error.response.data);
       }
       
       toast({
@@ -224,6 +231,7 @@ const LeaveManagement = () => {
     if (!rejectingLeaveId) return;
     
     try {
+      console.log("Rejecting leave", rejectingLeaveId);
       await axios.put(
         `${API_BASE_URL}/leaves/${rejectingLeaveId}/reject`,
         { reason: rejectionReason },
@@ -247,6 +255,7 @@ const LeaveManagement = () => {
       
       if (axios.isAxiosError(error) && error.response) {
         errorMessage = error.response.data.message || errorMessage;
+        console.error("Rejection error:", error.response.data);
       }
       
       toast({
@@ -325,15 +334,10 @@ const LeaveManagement = () => {
                         <SelectValue placeholder="Select leave type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="annual">Annual Leave</SelectItem>
                         <SelectItem value="sick">Sick Leave</SelectItem>
-                        <SelectItem value="personal">Personal Leave</SelectItem>
-                        <SelectItem value="bereavement">
-                          Bereavement Leave
-                        </SelectItem>
-                        <SelectItem value="maternity">
-                          Maternity/Paternity Leave
-                        </SelectItem>
+                        <SelectItem value="casual">Casual Leave</SelectItem>
+                        <SelectItem value="vacation">Vacation Leave</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -444,7 +448,7 @@ const LeaveManagement = () => {
                   <TableRow>
                     <TableHead className="w-[180px]">Leave Type</TableHead>
                     <TableHead>Duration</TableHead>
-                    {(user?.role === "admin" || user?.role === "hr") && (
+                    {hasManagementPermissions && (
                       <TableHead>Employee</TableHead>
                     )}
                     <TableHead>Date Requested</TableHead>
@@ -465,7 +469,7 @@ const LeaveManagement = () => {
                           {format(new Date(leave.endDate), "MMM d, yyyy")}
                         </div>
                       </TableCell>
-                      {(user?.role === "admin" || user?.role === "hr") && (
+                      {hasManagementPermissions && (
                         <TableCell>{leave.userName}</TableCell>
                       )}
                       <TableCell>
@@ -473,7 +477,7 @@ const LeaveManagement = () => {
                       </TableCell>
                       <TableCell>{getStatusBadge(leave.status)}</TableCell>
                       <TableCell className="text-right">
-                        {(user?.role === "admin" || user?.role === "hr") &&
+                        {hasManagementPermissions &&
                           leave.status === "pending" && (
                             <div className="flex justify-end gap-2">
                               <Button
