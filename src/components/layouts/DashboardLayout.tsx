@@ -19,6 +19,8 @@ import {
   ChevronDown,
   UserCircle,
   UserRound,
+  Building,
+  Server as ServerIcon,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -46,7 +48,25 @@ const navItems: NavItem[] = [
     label: "Dashboard",
     icon: <LayoutDashboard className="h-5 w-5" />,
     href: "/dashboard",
-    roles: ["admin", "hr", "manager", "employee"],
+    roles: ["superadmin", "admin", "hr", "manager", "employee"],
+  },
+  {
+    label: "System Dashboard",
+    icon: <LayoutDashboard className="h-5 w-5" />,
+    href: "/superadmin",
+    roles: ["superadmin"],
+  },
+  {
+    label: "Tenant Management",
+    icon: <Building className="h-5 w-5" />,
+    href: "/tenants",
+    roles: ["superadmin"],
+  },
+  {
+    label: "System Settings",
+    icon: <ServerIcon className="h-5 w-5" />,
+    href: "/system-settings",
+    roles: ["superadmin"],
   },
   {
     label: "Employees",
@@ -82,13 +102,13 @@ const navItems: NavItem[] = [
     label: "Profile",
     icon: <UserRound className="h-5 w-5" />,
     href: "/profile",
-    roles: ["admin", "hr", "manager", "employee"],
+    roles: ["superadmin", "admin", "hr", "manager", "employee"],
   },
   {
     label: "Settings",
     icon: <Settings className="h-5 w-5" />,
     href: "/settings",
-    roles: ["admin", "hr", "manager", "employee"],
+    roles: ["superadmin", "admin", "hr", "manager", "employee"],
   },
 ];
 

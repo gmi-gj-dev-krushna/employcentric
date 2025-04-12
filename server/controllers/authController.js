@@ -14,12 +14,18 @@ const register = async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
     
+    // Prevent registering as superadmin - superadmins can only be created by another superadmin
+    let userRole = role;
+    if (role === 'superadmin') {
+      userRole = 'admin'; // Default to admin if someone tries to register as superadmin
+    }
+    
     // Create new user
     const user = new User({
       name,
       email,
       password,
-      role,
+      role: userRole,
       company,
       phone
     });

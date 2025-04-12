@@ -14,6 +14,9 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import Dashboard from "./pages/Dashboard";
+import SuperAdminDashboard from "./pages/SuperAdminDashboard";
+import Tenants from "./pages/Tenants";
+import SystemSettings from "./pages/SystemSettings";
 import Employees from "./pages/Employees";
 import Attendance from "./pages/Attendance";
 import Leave from "./pages/Leave";
@@ -50,6 +53,30 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <Dashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/superadmin" 
+                element={
+                  <ProtectedRoute allowedRoles={["superadmin"]}>
+                    <SuperAdminDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/tenants" 
+                element={
+                  <ProtectedRoute allowedRoles={["superadmin"]}>
+                    <Tenants />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/system-settings" 
+                element={
+                  <ProtectedRoute allowedRoles={["superadmin"]}>
+                    <SystemSettings />
                   </ProtectedRoute>
                 } 
               />

@@ -14,7 +14,7 @@ const socketInstance = io("http://localhost:5000", {
   withCredentials: true
 });
 
-export type UserRole = "admin" | "hr" | "manager" | "employee";
+export type UserRole = "superadmin" | "admin" | "hr" | "manager" | "employee";
 
 export interface User {
   id: string;
