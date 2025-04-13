@@ -27,6 +27,10 @@ import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Unauthorized from "./pages/Unauthorized";
 import PlanComparison from "./pages/PlanComparison";
+import TenantUserManagement from "./pages/TenantUserManagement";
+import TenantSettings from "./pages/TenantSettings";
+import TenantApprovals from "./pages/TenantApprovals";
+import TenantDetails from "./pages/TenantDetails";
 
 const queryClient = new QueryClient();
 
@@ -77,6 +81,38 @@ const App = () => (
                 element={
                   <ProtectedRoute allowedRoles={["superadmin"]}>
                     <SystemSettings />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/tenant-user-management/:tenantId" 
+                element={
+                  <ProtectedRoute allowedRoles={["superadmin"]}>
+                    <TenantUserManagement />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/tenant-settings/:tenantId" 
+                element={
+                  <ProtectedRoute allowedRoles={["superadmin"]}>
+                    <TenantSettings />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/tenant-approvals" 
+                element={
+                  <ProtectedRoute allowedRoles={["superadmin"]}>
+                    <TenantApprovals />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/tenant-details/:tenantId" 
+                element={
+                  <ProtectedRoute allowedRoles={["superadmin"]}>
+                    <TenantDetails />
                   </ProtectedRoute>
                 } 
               />

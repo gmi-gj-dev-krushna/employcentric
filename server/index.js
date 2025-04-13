@@ -17,6 +17,7 @@ const leaveRoutes = require('./routes/leaveRoutes');
 const employeeRoutes = require('./routes/employeeRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes');
 const payrollRoutes = require('./routes/payrollRoutes');
+const tenantRoutes = require('./routes/tenantRoutes');
 
 // Connect to MongoDB
 connectDB();
@@ -56,6 +57,7 @@ app.use('/api/leaves', leaveRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/payroll', payrollRoutes);
+app.use('/api/tenants', tenantRoutes);
 
 // Create HTTP server
 const server = http.createServer(app);
