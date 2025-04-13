@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import DashboardLayout from "@/components/layouts/DashboardLayout";
+import TenantDashboardLayout from "@/components/layouts/tenant/TenantDashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { employeeApi, Employee } from "@/api/employeeApi";
@@ -44,7 +44,7 @@ const Employees = () => {
   const departments = Array.from(new Set(employees.map(e => e.department)));
 
   return (
-    <DashboardLayout>
+    <TenantDashboardLayout>
       <div className="space-y-6">
         <EmployeeActions onAddEmployee={() => setShowAddDialog(true)} />
 
@@ -73,7 +73,7 @@ const Employees = () => {
         onOpenChange={setShowAddDialog}
         onEmployeeAdded={fetchEmployees}
       />
-    </DashboardLayout>
+    </TenantDashboardLayout>
   );
 };
 

@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import DashboardLayout from "@/components/layouts/DashboardLayout";
+import TenantDashboardLayout from "@/components/layouts/tenant/TenantDashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -171,7 +171,7 @@ const Attendance = () => {
   const hasCheckedOut = !!userRecord?.checkOut;
 
   return (
-    <DashboardLayout>
+    <TenantDashboardLayout>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Attendance</h1>
@@ -448,7 +448,7 @@ const Attendance = () => {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
+    </TenantDashboardLayout>
   );
 };
 

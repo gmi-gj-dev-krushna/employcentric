@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import DashboardLayout from "@/components/layouts/DashboardLayout";
+import TenantDashboardLayout from "@/components/layouts/tenant/TenantDashboardLayout";
 import {
   Card,
   CardContent,
@@ -145,7 +145,7 @@ const Payroll = () => {
   };
 
   return (
-    <DashboardLayout>
+    <TenantDashboardLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
@@ -628,7 +628,7 @@ const Payroll = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </DashboardLayout>
+    </TenantDashboardLayout>
   );
 };
 

@@ -39,7 +39,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import DashboardLayout from "@/components/layouts/DashboardLayout";
+import TenantDashboardLayout from "@/components/layouts/tenant/TenantDashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -298,7 +298,7 @@ const LeaveManagement = () => {
   };
 
   return (
-    <DashboardLayout>
+    <TenantDashboardLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
@@ -548,7 +548,7 @@ const LeaveManagement = () => {
           </DialogContent>
         </Dialog>
       </div>
-    </DashboardLayout>
+    </TenantDashboardLayout>
   );
 };
 

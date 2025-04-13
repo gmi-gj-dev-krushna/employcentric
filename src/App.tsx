@@ -15,6 +15,7 @@ import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import Dashboard from "./pages/tenant/Dashboard";
 import SuperAdminDashboard from "./pages/superadmin/SuperAdminDashboard";
+import Index from "./pages/Index";
 import Tenants from "./pages/Tenants";
 import SystemSettings from "./pages/SystemSettings";
 import Employees from "./pages/Employees";
@@ -45,6 +46,7 @@ const App = () => (
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Landing />} />
+              <Route path="/index" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />

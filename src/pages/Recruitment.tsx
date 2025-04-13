@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import DashboardLayout from "@/components/layouts/DashboardLayout";
+import TenantDashboardLayout from "@/components/layouts/tenant/TenantDashboardLayout";
 import {
   Card,
   CardContent,
@@ -260,7 +260,7 @@ const Recruitment = () => {
   };
   
   return (
-    <DashboardLayout>
+    <TenantDashboardLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
@@ -957,7 +957,7 @@ const Recruitment = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </DashboardLayout>
+    </TenantDashboardLayout>
   );
 };
 
