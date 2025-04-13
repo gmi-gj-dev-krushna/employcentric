@@ -2,21 +2,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import SuperAdminDashboardLayout from "@/components/layouts/superadmin/SuperAdminDashboardLayout";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle, 
-  CardFooter 
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Building, ShieldCheck, Users, PlusCircle, Clock, CheckCircle } from "lucide-react";
+import { PlusCircle, CheckCircle } from "lucide-react";
 import { TenantForm } from "@/components/tenants/TenantForm";
 import { TenantFilters } from "@/components/tenants/TenantFilters";
-import { TenantActionMenu } from "@/components/tenants/TenantActionMenu";
+import { TenantStats } from "@/components/tenants/TenantStats";
+import { TenantTable } from "@/components/tenants/TenantTable";
 import { TenantFormData, Tenant } from "@/api/tenantApi";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -221,121 +213,23 @@ const TenantsPage = () => {
           onFilterChange={handleFilterChange} 
         />
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Tenants</CardTitle>
-              <Building className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalTenants}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Tenants</CardTitle>
-              <ShieldCheck className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{activeTenants}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending Approvals</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{pendingApprovals}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalUsers}</div>
-            </CardContent>
-          </Card>
-        </div>
+        <TenantStats 
+          totalTenants={totalTenants}
+          activeTenants={activeTenants}
+          pendingApprovals={pendingApprovals}
+          totalUsers={totalUsers}
+        />
         
-        <Card>
-          <CardHeader>
-            <CardTitle>All Tenants</CardTitle>
-            <CardDescription>Organizations registered on your platform</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Users</TableHead>
-                  <TableHead>Plan</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredTenants.map((tenant) => (
-                  <TableRow key={tenant.id} className="cursor-pointer" onClick={() => navigate(`/tenant-details/${tenant.id}`)}>
-                    <TableCell className="font-medium">{tenant.name}</TableCell>
-                    <TableCell>{tenant.email}</TableCell>
-                    <TableCell>{tenant.users}</TableCell>
-                    <TableCell>
-                      <Badge variant={
-                        tenant.plan === "Enterprise" 
-                          ? "default" 
-                          : tenant.plan === "Professional" 
-                            ? "outline" 
-                            : "secondary"
-                      }>
-                        {tenant.plan}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={`${
-                        tenant.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {tenant.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{tenant.createdAt}</TableCell>
-                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                      <TenantActionMenu 
-                        tenant={tenant as Tenant}
-                        onEdit={handleEditTenant}
-                        onDelete={handleDeleteTenant}
-                        onActivate={handleActivateTenant}
-                        onSuspend={handleSuspendTenant}
-                        onManageUsers={handleManageUsers}
-                        onManageSettings={handleManageSettings}
-                      />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-          <CardFooter className="flex items-center justify-between border-t px-6 py-4">
-            <div className="text-sm text-muted-foreground">
-              Showing <strong>{filteredTenants.length}</strong> of <strong>{tenants.length}</strong> tenants
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" disabled>
-                Previous
-              </Button>
-              <Button variant="outline" size="sm">
-                Next
-              </Button>
-            </div>
-          </CardFooter>
-        </Card>
+        <TenantTable 
+          tenants={tenants}
+          filteredTenants={filteredTenants}
+          onEdit={handleEditTenant}
+          onDelete={handleDeleteTenant}
+          onActivate={handleActivateTenant}
+          onSuspend={handleSuspendTenant}
+          onManageUsers={handleManageUsers}
+          onManageSettings={handleManageSettings}
+        />
       </div>
       
       {/* Tenant Creation Form */}

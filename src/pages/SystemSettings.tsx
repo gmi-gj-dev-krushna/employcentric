@@ -1,6 +1,6 @@
 
 import { useAuth } from "@/contexts/AuthContext";
-import DashboardLayout from "@/components/layouts/DashboardLayout";
+import SuperAdminDashboardLayout from "@/components/layouts/superadmin/SuperAdminDashboardLayout";
 import { 
   Card, 
   CardContent, 
@@ -27,7 +27,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const SystemSettings = () => {
   return (
-    <DashboardLayout>
+    <SuperAdminDashboardLayout>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">System Settings</h1>
@@ -501,7 +501,7 @@ const SystemSettings = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </DashboardLayout>
+    </SuperAdminDashboardLayout>
   );
 };
 

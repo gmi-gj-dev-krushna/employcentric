@@ -1,6 +1,6 @@
 
 import { useAuth } from "@/contexts/AuthContext";
-import DashboardLayout from "@/components/layouts/DashboardLayout";
+import SuperAdminDashboardLayout from "@/components/layouts/superadmin/SuperAdminDashboardLayout";
 import { 
   Card, 
   CardContent, 
@@ -45,7 +45,7 @@ const SuperAdminDashboard = () => {
   const { user } = useAuth();
   
   return (
-    <DashboardLayout>
+    <SuperAdminDashboardLayout>
       <div className="space-y-6">
         {/* Welcome header */}
         <div>
@@ -324,7 +324,7 @@ const SuperAdminDashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </DashboardLayout>
+    </SuperAdminDashboardLayout>
   );
 };
 

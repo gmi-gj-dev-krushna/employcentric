@@ -8,26 +8,29 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
-// Pages
+// Pages - Public
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
-import Dashboard from "./pages/tenant/Dashboard";
-import SuperAdminDashboard from "./pages/superadmin/SuperAdminDashboard";
-import Index from "./pages/Index";
-import Tenants from "./pages/Tenants";
-import SystemSettings from "./pages/SystemSettings";
-import Employees from "./pages/Employees";
-import Attendance from "./pages/Attendance";
-import Leave from "./pages/Leave";
-import Payroll from "./pages/Payroll";
-import Recruitment from "./pages/Recruitment";
-import Profile from "./pages/Profile";
-import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Unauthorized from "./pages/Unauthorized";
 import PlanComparison from "./pages/PlanComparison";
+import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
+
+// Pages - Tenant
+import Dashboard from "./pages/tenant/Dashboard";
+import Attendance from "./pages/tenant/Attendance";
+import Employees from "./pages/tenant/Employees";
+import Leave from "./pages/tenant/Leave";
+import Payroll from "./pages/tenant/Payroll";
+import Recruitment from "./pages/tenant/Recruitment";
+
+// Pages - SuperAdmin
+import SuperAdminDashboard from "./pages/superadmin/SuperAdminDashboard";
+import Tenants from "./pages/superadmin/Tenants";
+import SystemSettings from "./pages/superadmin/SystemSettings";
 import TenantUserManagement from "./pages/TenantUserManagement";
 import TenantSettings from "./pages/TenantSettings";
 import TenantApprovals from "./pages/TenantApprovals";
@@ -46,7 +49,7 @@ const App = () => (
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Landing />} />
-              <Route path="/index" element={<Index />} />
+              <Route path="/index" element={<Navigate to="/" />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
